@@ -5,10 +5,10 @@ DeepSpace SWE Intern (Summer 2027) build exercise: an ABC-notation clip-sharing 
 
 - Hard deadline: **Mon Nov 24, 2026, 11:59 PM ET**.
 - Read the DeepSpace agent skill (https://github.com/deepdotspace/deepspace-skill) and the quickstart (https://docs.deep.space) before writing code. Check CLI commands against the docs, not the brief.
-- Folder name is provisional. Pick the final app name (it becomes `<name>.app.space`) with Xuyan before the first deploy.
+- App name: `midishare` → https://midishare.app.space (decided 2026-11-20). The folder keeps its old name. Display name is `APP_NAME` in `src/constants.ts` and `[vars]` in `wrangler.toml`.
+- Source: GitHub, public repo `huangxuyan1/midishare`. The first deploy with that `origin` remote claims GitHub source permanently. Never run `deepspace push`.
 - Scaffolded on 2026-11-20 with `npm create deepspace@latest .` (deepspace 0.44.2, SDK pinned exactly). The scaffold's own agent notes are in [AGENTS.md](AGENTS.md) (via `CLAUDE.deepspace.md`); read them too.
 - The app registers on first use (`dev start`, `deploy`, `app init`, secrets write) under whatever account `npx deepspace auth whoami` shows. Register before the first commit.
-- Version control defaults to the DeepSpace cloud repo. Whether to use GitHub instead is Xuyan's call, and it latches permanently at the first deploy (see skill "One source authority"). Decide before deploying.
 
 ## Working rules
 - Xuyan makes the product and architecture decisions. Ask when a choice would change scope.
