@@ -7,7 +7,8 @@ import abcjs from 'abcjs'
 import { Play, Square } from 'lucide-react'
 import { Button } from '@/components/ui'
 
-export function AbcView({ abc }: { abc: string }) {
+/** showPlay=false hides the Play button (the editor has its own transport). */
+export function AbcView({ abc, showPlay = true }: { abc: string; showPlay?: boolean }) {
   const paperRef = useRef<HTMLDivElement>(null)
   const tuneRef = useRef<abcjs.TuneObject | null>(null)
   const synthRef = useRef<abcjs.MidiBuffer | null>(null)
@@ -50,7 +51,7 @@ export function AbcView({ abc }: { abc: string }) {
   return (
     <div className="flex flex-col gap-3">
       <div ref={paperRef} data-testid="abc-notation" className="rounded-md bg-white p-2 text-black" />
-      <div>
+      <div className={showPlay ? '' : 'hidden'}>
         {playing ? (
           <Button variant="secondary" onClick={stop}>
             <Square className="size-4" /> Stop

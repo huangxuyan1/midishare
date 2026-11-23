@@ -7,6 +7,7 @@
  * - title, tempo, meter and key show the header lines; editing one rewrites
  *   that header (meter and key also rewrite the music so the notes stay put)
  * - the sheet music preview renders the ABC
+ * - the transport above the roll plays it, with a playhead on the roll
  * Saving is disabled until the ABC parses.
  */
 import { useMemo, useRef, useState } from 'react'
@@ -15,6 +16,8 @@ import { AbcView } from './AbcView'
 import { AiAssist } from './AiAssist'
 import { MetadataFields } from './MetadataFields'
 import { PianoRoll } from './PianoRoll'
+import { Transport } from './Transport'
+import { usePlayback } from '@/lib/use-playback'
 import { checkAbc } from '@/lib/abc'
 import { readHeaders, setHeader } from '@/lib/abc-headers'
 import { abcToNotes, barLengthInSteps, writeNotesIntoAbc, type Note } from '@/lib/abc-notes'
@@ -43,6 +46,8 @@ export function ClipForm({ initial, ready, onSave }: Props) {
   const check = checkAbc(values.abc)
   const canSave = ready && !saving && check.ok && values.title.trim() !== ''
   const headers = readHeaders(values.abc)
+  const barSteps = barLengthInSteps(headers.meter)
+  const playback = usePlayback(values.abc, barSteps)
 
   // While the ABC text is mid-edit and doesn't parse, keep showing the last good notes.
   const lastGoodNotes = useRef<Note[]>([])
@@ -99,11 +104,23 @@ export function ClipForm({ initial, ready, onSave }: Props) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label>Piano roll</Label>
+        <div className="flex items-end justify-between gap-4">
+          <Label>Piano roll</Label>
+          <Transport
+            status={playback.status}
+            position={playback.position}
+            barSteps={barSteps}
+            onPlay={playback.play}
+            onStop={playback.stop}
+            onReset={playback.reset}
+          />
+        </div>
         <PianoRoll
           notes={notes}
-          barSteps={barLengthInSteps(headers.meter)}
+          barSteps={barSteps}
           onChange={(next) => setAbc(writeNotesIntoAbc(values.abc, next))}
+          playhead={playback.position}
+          playing={playback.status === 'playing'}
         />
         <p className="text-xs text-muted-foreground">
           Double-click to add a note, drag to move it, drag its right edge to resize, double-click a note to delete it.
@@ -131,7 +148,7 @@ export function ClipForm({ initial, ready, onSave }: Props) {
         <div className="flex flex-col gap-1.5">
           <Label>Sheet music</Label>
           {check.ok ? (
-            <AbcView abc={values.abc} />
+            <AbcView abc={values.abc} showPlay={false} />
           ) : (
             <ul className="flex flex-col gap-1 text-sm text-destructive" data-testid="abc-error">
               {check.errors.map((e, i) => (

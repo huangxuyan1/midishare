@@ -36,9 +36,13 @@ type Props = {
   /** Length of one bar in 16ths (16 for 4/4, 12 for 3/4 or 6/8). */
   barSteps: number
   onChange: (notes: Note[]) => void
+  /** Playhead position in 16ths (see usePlayback). */
+  playhead: number
+  /** While playing, sounding notes light up and the view follows the playhead. */
+  playing: boolean
 }
 
-export function PianoRoll({ notes, barSteps, onChange }: Props) {
+export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   // The drag lives in a ref, not state: pointer events can arrive faster than
@@ -64,6 +68,17 @@ export function PianoRoll({ notes, barSteps, onChange }: Props) {
     el.scrollTop = rowY(center) - el.clientHeight / 2
     // Only on mount: later edits shouldn't jump the view.
   }, [])
+
+  // While playing, scroll sideways to keep the playhead in view.
+  const playheadX = KEYS_W + playhead * STEP_W
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || !playing) return
+    const visibleRight = el.scrollLeft + el.clientWidth
+    if (playheadX > visibleRight - 40 || playheadX < el.scrollLeft + KEYS_W) {
+      el.scrollLeft = playheadX - KEYS_W - 40
+    }
+  }, [playheadX, playing])
 
   function pointInGrid(e: { clientX: number; clientY: number }) {
     const box = svgRef.current!.getBoundingClientRect()
@@ -180,16 +195,19 @@ export function PianoRoll({ notes, barSteps, onChange }: Props) {
         {/* Double-click target for adding notes (behind the notes). */}
         <rect x={KEYS_W} y={0} width={steps * STEP_W} height={height} fill="transparent" onDoubleClick={addNote} />
 
-        {shown.map((n, i) => (
+        {shown.map((n, i) => {
+          const sounding = playing && n.start <= playhead && playhead < n.start + n.length
+          return (
           <rect
             key={i}
             data-testid="roll-note"
+            data-sounding={sounding || undefined}
             x={KEYS_W + n.start * STEP_W + 1}
             y={rowY(n.pitch) + 1}
             width={n.length * STEP_W - 2}
             height={ROW_H - 2}
             rx={2}
-            className={dragged?.index === i ? 'fill-primary/70' : 'fill-primary'}
+            className={sounding ? 'fill-amber-400' : dragged?.index === i ? 'fill-primary/70' : 'fill-primary'}
             style={{ cursor: 'grab' }}
             onPointerDown={(e) => startDrag(e, i)}
             onDoubleClick={(e) => {
@@ -199,7 +217,19 @@ export function PianoRoll({ notes, barSteps, onChange }: Props) {
           >
             <title>{`${noteName(n.pitch)} · drag to move, drag the right edge to resize, double-click to delete`}</title>
           </rect>
-        ))}
+          )
+        })}
+
+        {/* The playhead. pointer-events-none so it never blocks clicks on notes. */}
+        <line
+          data-testid="playhead"
+          x1={playheadX}
+          x2={playheadX}
+          y1={0}
+          y2={height}
+          className="pointer-events-none stroke-amber-400"
+          strokeWidth={2}
+        />
       </svg>
     </div>
   )
