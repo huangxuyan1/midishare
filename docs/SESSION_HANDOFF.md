@@ -1,91 +1,92 @@
-# Session handoff — 2026-11-23
+# Session handoff — end of session 2, 2026-11-23
 
-Written at the end of session 1 and updated during session 2 (same day) for the next agent session. Read this, then [HANDOFF.md](HANDOFF.md) (the original brief), [CLAUDE.md](../CLAUDE.md) (working rules) and [BUILD_LOG.md](BUILD_LOG.md) (everything done so far, with how it was verified).
+For the next agent session. Read this first, then [CLAUDE.md](../CLAUDE.md) (working rules). Open [HANDOFF.md](HANDOFF.md) (the original brief) and [BUILD_LOG.md](BUILD_LOG.md) (everything done, with how it was verified) when you need the detail.
 
-**Hard deadline: Tue Nov 24, 2026, 11:59 PM ET.** Xuyan submits in the careers portal. The agent never submits.
+**Hard deadline: Tue Nov 24, 2026, 11:59 PM ET** (confirmed from the invite email). Xuyan submits in the careers portal. The agent never submits.
 
 ## 1. Where things stand
 
-- **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
-  - Latest release: `rel_01M83W276QSMPQKC8J53M6JN4C`, commit `84e83db`, `dirty: false`. Commits after it change only docs.
-- **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`, everything pushed.
-  - The DeepSpace source is GitHub, claimed on the first deploy. **Never run `deepspace push`.**
-- **Data:** the server holds 5 published clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan, published with Xuyan's go-ahead. Xuyan had not listened to them yet; unpublish or delete any that sound wrong.
-- **Tests:** 28 unit tests and 11 Playwright tests pass (`npx deepspace test run all --port 5187`). Type-check and lint are clean.
-  - Commands: `npx tsc --noEmit`, `npx eslint src`, `npx vitest run`.
-- **Skills:** the DeepSpace skill and the 39 Matt Pocock skills (`npx skills@1.9.0 add mattpocock/skills`) are installed in `.claude/skills/`; `skills-lock.json` lists them.
-- **Uncommitted: nothing** (settled in session 2). `skills-lock.json` is committed; the installed skill copies (`.agents/`, `.claude/skills/`) are gitignored. The process docs (this file, HANDOFF.md, BUILD_LOG.md, SUBMISSION.md) moved into `docs/`.
+The app is finished and submittable. What is left is Xuyan's own checking and the submission note.
 
-## 2. What the app does
+- **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
+  - Latest release: `rel_01M83W276QSMPQKC8J53M6JN4C`, commit `84e83db`, `dirty: false`. Every commit after it changes only docs.
+- **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`. Everything is committed and pushed.
+  - The DeepSpace source is GitHub. **Never run `deepspace push`.**
+- **Data:** 5 published example clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan. Xuyan had not listened to them when they were published.
+- **Tests:** 28 unit tests and 11 Playwright tests pass. Type-check and lint are clean.
+  - `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`
+  - `npx deepspace test run all --port 5187` (port 5173 belongs to another dev server; don't kill it)
+- **Test accounts:** "Test A" and "Test B" exist. The Playwright fixture signs them in from the CLI's saved credentials.
+- **Skills:** the DeepSpace skill and the 39 Matt Pocock skills are in `.claude/skills/` (gitignored). `skills-lock.json` lists them and is committed.
+
+## 2. To do
+
+1. **Xuyan, by ear.** Press Play in the editor and on a clip page. Confirm that sound comes out and that it lines up with the playhead. Try the space bar. Listen to the five example clips; unpublish or delete any that sound wrong.
+2. **Xuyan, the submission note.** Edit [SUBMISSION.md](SUBMISSION.md) and resolve its two TODO lines (the by-ear check, and any code Xuyan changed by hand). Then submit in the portal: live URL, repository, note.
+3. **After any code change:** run the checks, commit, deploy, and confirm `dirty: false`. Verify the changed path on the live URL. Add rows to BUILD_LOG.md.
+4. **Optional polish**, only if Xuyan asks:
+   - `/new` starts with an empty title while the example ABC has `T:Example`
+   - in keys without flats (C, Am…), B♭ is spelled `^A`
+   - click the bar numbers to seek
+5. **Set aside, separate tasks:**
+   - **Modular as the audio engine, with a soundfont supernode.** Planned only; see [MODULAR_AUDIO_ENGINE.md](MODULAR_AUDIO_ENGINE.md). The Modular part belongs in a session opened in the Modular folder.
+   - **Switching the Ableton bridge to ABC** (`C:\Users\alvin\Documents\Projects\midi-clipboard`). See HANDOFF.md §5.
+
+## 3. What the app does
 
 | Area | What | Main files |
 |---|---|---|
 | Data | `clips` collection: title, description, tags (comma text), abc, status `draft`/`published`, source `pasted`/`ai`. Server-side maxLength (title 100, description 1000, tags 200, abc 5000). | `src/schemas/clips-schema.ts` (+ `.test.ts`) |
 | Permissions | Anyone, including signed-out viewers, reads `published` clips. Members create, and update/delete their own (`'own'`). Admins can delete any clip. Drafts are visible only to their owner (`visibilityField` on status). | same |
+| Landing | `/`: static page with a short description and a link to `/home`. | `src/pages/index.tsx`, `src/seo.ts` |
 | Browse | `/home`: My clips + Published, newest first, `?q=` (title/tag) and `?tag=` | `src/pages/(app)/home.tsx` |
-| Clip page | `/clips/:id`: read-only piano roll with the transport (session 2), sheet music, Download .mid, Copy ABC, Show ABC, Make a variation. Owner: Edit, Publish/Unpublish, Delete (confirm dialog). | `src/pages/(app)/clips/[id].tsx`, `src/components/ClipPlayer.tsx`, `AbcView.tsx` (sheet music only) |
-| Editor | `/new`, `/new?from=<id>` (variation), `/edit/:id`. The ABC text is the single source of truth. The piano roll, the title/tempo/meter/key fields and the sheet preview are views that write back to it. | `src/components/ClipForm.tsx`, `MetadataFields.tsx` |
-| Piano roll | SVG, 16th grid, C2–B6. Double-click adds a note; drag moves it; dragging the right edge resizes it; double-clicking a note deletes it. Keys keep piano colors in dark mode. | `src/components/PianoRoll.tsx` |
-| Transport | Play / Stop (keeps the playhead) / Reset (back to the start), bar.beat counter, amber playhead, sounding notes turn amber, follow-scroll. At the end the playhead returns to the start. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
-| ABC ↔ notes | ABC → notes via abcjs `setUpAudio` (key, ties and chord symbols resolved). Notes → ABC: notes with the same start and length form a chord, and overlapping chords go into separate voices (`V:1`, `V:2 clef=bass`…). Lengths are split into writable values and tied. | `src/lib/abc-notes.ts`, `src/lib/abc-headers.ts` (+ tests) |
-| AI assistant | `POST /api/abc/generate` (JWT required, prompt ≤500, currentAbc ≤5000). `createDeepSpaceAI(env,'anthropic',{authToken})` (the caller's credits, no API key), `DEEPSPACE_AI_DEFAULTS.directGeneration`, `maxOutputTokens: 2000`. Validated with `checkAbc`, retried once with the errors, then 502; a 402 becomes "Not enough DeepSpace credits". | `src/server/abc-routes.ts`, `src/components/AiAssist.tsx` |
-| Validation | `checkAbc`: requires a `K:` line, at least one parsed line, zero abcjs warnings. Saving is disabled until it passes. | `src/lib/abc.ts` |
+| Clip page | `/clips/:id`: read-only piano roll with the transport, sheet music, Download .mid, Copy ABC, Show ABC, Make a variation. Owner: Edit, Publish/Unpublish, Delete (confirm dialog). | `src/pages/(app)/clips/[id].tsx`, `src/components/ClipPlayer.tsx` |
+| Editor | `/new`, `/new?from=<id>` (variation), `/edit/:id`. The ABC text is the single source of truth. The piano roll, the title/tempo/meter/key fields and the sheet preview are views that write back to it. Each clip gets its own form instance (`key`). | `src/components/ClipForm.tsx`, `MetadataFields.tsx` |
+| Piano roll | SVG, 16th grid, C2–B6. Double-click adds a note; drag moves it; dragging the right edge resizes it; double-clicking a note deletes it. Read-only when `onChange` is left out. | `src/components/PianoRoll.tsx` |
+| Transport | Play / Stop (keeps the playhead) / Reset, bar.beat counter, amber playhead, sounding notes turn amber, follow-scroll. The space bar toggles play/stop. Used by the editor and the clip page. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
+| Sheet music | abcjs rendering only; it has no player of its own. | `src/components/AbcView.tsx` |
+| ABC ↔ notes | ABC → notes via abcjs `setUpAudio`. Notes → ABC: same start and length form a chord; overlapping chords go into separate voices. Lengths are split into writable values and tied. | `src/lib/abc-notes.ts`, `src/lib/abc-headers.ts` (+ tests) |
+| AI assistant | `POST /api/abc/generate` (JWT required, prompt ≤500, currentAbc ≤5000). `createDeepSpaceAI(env,'anthropic',{authToken})`, `maxOutputTokens: 2000`. Validated with `checkAbc`, retried once with the errors, then 502. | `src/server/abc-routes.ts`, `src/components/AiAssist.tsx` |
+| Validation | `checkAbc`: requires a `K:` line, at least one parsed line, zero abcjs warnings. | `src/lib/abc.ts` |
+| Record tools | `registerAgent` mounts the record tools under `/_deepspace/agent`. `deepspace agent invoke` and the two-user test use them. | `src/ai/agent.ts`, `src/ai/tools.ts` |
+| Tests | Unit: schema permissions, ABC validation, ABC ↔ notes. Playwright: smoke, API, two-user ownership, read-only roll. | `src/**/*.test.ts`, `tests/` |
 
-Everything above was verified on the live URL; BUILD_LOG.md has each check.
-
-## 3. To do, in priority order
-
-1. **Xuyan, by ear:** press Play in the editor and on a clip page (both use the same transport now). Confirm that sound comes out and that it lines up with the playhead. Listen to the five example clips.
-2. **Two-user ownership test: done in session 2 on the local dev worker (4/4 pass, mutation-checked; see BUILD_LOG.md).** Test accounts "Test A" and "Test B" exist. Not repeated on the live URL. Original notes: The spec is the last test in `tests/collab.spec.ts`. Run it with `npx deepspace test run tests/collab.spec.ts --port 5187` (port 5173 was taken by another dev server; don't kill it). It skips until Xuyan creates 2 test accounts, for example:
-   `npx deepspace test accounts create --email a@deepspace.test --name "Test A" --password-stdin`
-   - The agent must not create accounts or enter passwords.
-   - Then use either the scaffold's multi-user Playwright fixture (`tests/collab.spec.ts`, `deepspace/testing`, `npm run test:e2e`) or a manual check: user B cannot edit or delete A's clip and cannot see A's drafts.
-   - Check that the server enforces this (a direct records call), not only the UI.
-   - Use `__test__` titles and delete the test clips afterwards.
-3. **README.md: done in session 2** (update it after the decisions in items 5 and 6). It covers what it is, the live URL, how to run (`npm install`, `npm run dev`), the architecture (table above), the DeepSpace features used and the ones skipped with reasons, and known limits.
-4. **Submission note draft: `SUBMISSION.md` written in session 2**, with TODO marks for the by-ear check, Xuyan's own code changes and the two-user test. Remove each TODO as it gets done. Xuyan edits and submits it. It must cover:
-   - what was built
-   - the DeepSpace integrations used: auth, records + RBAC with realtime `useQuery`, server-side AI via `createDeepSpaceAI`, deploys
-   - the ones skipped, and why (payments, collaborative editing, files, scheduled jobs…)
-   - the main tradeoff: ABC as the single format, losing velocity and timing detail and MIDI import, plus the lossy roll ↔ ABC rewrite
-   - what the agent did vs. what Xuyan verified
-
-   Build it from BUILD_LOG.md and don't invent anything. Unfinished parts must be stated honestly.
-5. **Scaffold leftovers: done in session 2.** Removed the unmounted AI chat routes (`src/ai/chat-routes.ts`), the `/api-status` page with its two tests, and the yarn/pnpm config files. Kept `registerAgent` (`src/ai/agent.ts`, `tools.ts`): its tool routes serve `deepspace agent invoke` and the two-user test. Kept the unused Durable Object classes in `worker.ts`: removing a deployed class needs a migration.
-6. **Final deploy:** must be clean (`dirty: false`). Redeploy after any later change, and verify the important path live once more.
-7. **Optional polish**, only if time allows; ask first (the scaffold landing page copy was already replaced in session 2):
-   - `/new` starts with an empty title while the example ABC has `T:Example`
-   - in keys without flats (C, Am…), B♭ is spelled `^A`
-   - click the bar numbers to seek
-   - space bar for play/stop (done in session 2)
-8. **Separate workstream, not required:** switch the Ableton bridge (`C:\Users\alvin\Documents\Projects\midi-clipboard`) to ABC. See HANDOFF.md §5.
+Sound comes from abcjs's synth, which downloads piano samples from a third-party host at play time. See MODULAR_AUDIO_ENGINE.md.
 
 ## 4. Decisions already made by Xuyan (don't reopen)
 
 - App name `midishare`; public GitHub source.
-- AI is a one-shot generator, not the AI chat feature. The writeup should say why: the product needs ABC out, not a conversation.
+- AI is a one-shot generator, not the AI chat feature. The product needs ABC out, not a conversation.
 - A single-track piano roll.
 - Title/meter/key/tempo are metadata synced with the ABC headers, not piano-roll edits.
 - Chord symbols become real notes in the roll, and the roll writes notes back. The round trip doesn't have to give back identical ABC.
-- AI first, then the piano roll (done).
-- **Interpreted by the agent; Xuyan may change these:**
+- The clip page shows the piano roll too, read-only.
+- The space bar toggles play/stop.
+- Repo cleanup: process docs live in `docs/`; the unmounted AI chat routes and the `/api-status` page are removed; the installed skill copies are gitignored.
+- The Modular audio engine is a separate task, set aside.
+- **Chosen by the agent; Xuyan may change these:**
   - A key change keeps the pitches and re-spells them; it does not transpose.
   - Stop keeps the playhead where it is.
+  - The example clips carry source `ai`, so they show the "AI-generated" badge.
+  - The unused Durable Object classes stay in `worker.ts`, because removing a deployed class needs a migration.
 
 ## 5. Gotchas learned the hard way
 
 - **Deploy output** goes to the scratchpad, never into the repo. A file inside the repo makes the release dirty.
-  - Command: `npx deepspace deploy --json > <scratchpad>/deploy.json 2>&1`
+  - `npx deepspace deploy --json > <scratchpad>/deploy.json 2>&1`
 - **Server-side records check:** write `{"collection":"clips"}` to a file in the scratchpad, then
   `npx deepspace agent invoke midishare records_query --input-file <that file>`.
-  - `records_delete` cleans up.
+  - `records_get` returns `{ record: { data } }`. Refusals say `READ DENIED`, `UPDATE DENIED` or `DELETE DENIED`.
   - `npx deepspace logs --since 10m` shows server errors.
-- **abcjs ties inside chords:** abcjs only follows a tie inside a chord into a next chord that has the tied note at the same position. That's why the writer uses voices; don't go back to `[CE-] E`-style output.
-- **abcjs `onEnded`** also fires on a manual stop (Web Audio `onended`). `use-playback.ts` detects the end from the duration `prime()` returns.
+- **Test accounts:** when Xuyan needs to create one, give the full command with `--password <value>` filled in. Xuyan runs it. The agent never types a password into the production site.
+- **abcjs ties inside chords:** abcjs only follows a tie inside a chord into a next chord that has the tied note at the same position. That's why the writer uses voices.
+- **abcjs `onEnded`** also fires on a manual stop. `use-playback.ts` detects the end from the duration `prime()` returns.
 - **AI credits:** an unset `maxOutputTokens` reserves 64k tokens of credits up front and fails with 402. Keep the 2000 cap.
 - **Built-in browser pane:**
-  - The screenshot frame isn't the same size as the CSS viewport; it was 800px wide against 1056–1297 CSS px. Scale coordinates, or use refs from `find`/`read_page`.
-  - For timing-sensitive checks, drive the buttons from one in-page script; separate tool calls add seconds of latency.
-  - When the pane is hidden, audio and animation may be throttled.
+  - The screenshot frame isn't the same size as the CSS viewport. Use refs or in-page scripts instead of coordinates.
+  - For timing-sensitive checks, drive the page from one in-page script.
+  - When the pane is hidden, animation frames pause: a playhead sample can read as "not moving". Sample several times.
+  - To move between app URLs without a page load: `history.pushState` then dispatch a `popstate` event.
 - **Sign-in:** Xuyan is signed in on midishare.app.space in the built-in browser. The agent never signs in or creates accounts.
-- **Build log:** keep updating docs/BUILD_LOG.md as you go. Insert rows before the `\nTypes:` line. Use the row types `decision`, `agent`, `verified`, `changed-by-me`, `deploy`, `issue`.
+- **Build log:** insert rows before the `\nTypes:` line of `docs/BUILD_LOG.md`. Row types: `decision`, `agent`, `verified`, `changed-by-me`, `deploy`, `issue`.
+- **Line endings:** files are LF in the repo. When editing with a script, keep each file's existing line ending.
