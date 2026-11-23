@@ -15,7 +15,7 @@
  * persisted to `~/.deepspace/playwright-states/`), context creation, and
  * cleanup. No need to manage browser contexts manually.
  */
-import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
+import { test, expect, loadAllTestAccounts, type MultiplayerUser } from 'deepspace/testing'
 
 // A machine that has never created test accounts is the normal state of a
 // fresh checkout, and there `users()` throws — turning "you have no pool yet"
@@ -130,4 +130,118 @@ test('API status page shows local retry after first-load API failure', async ({ 
   await retryButton.click()
   await expect.poll(() => requestCount).toBeGreaterThan(requestsAfterFailure)
   expect(user.page.url()).toBe(urlAfterFailure)
+})
+
+// ── Clip ownership: user A owns the clips, user B is someone else ────────────
+
+const EXAMPLE_ABC = 'X:1\nT:Ownership test\nM:4/4\nL:1/4\nK:C\nC D E F|\n'
+
+/**
+ * Calls one of the app's record tools over HTTP as `user`, without the UI.
+ * The route runs the call in the RecordRoom with that user's identity, so a
+ * refusal here comes from the server's permission check, not from a hidden
+ * button. Reply: { ok: true, result } or { ok: false, code, error }.
+ */
+async function callTool(user: MultiplayerUser, tool: string, input: Record<string, unknown>) {
+  const api = user.context.request // shares this user's sign-in cookies
+  const { token } = await (await api.post('/api/auth/token')).json()
+  const res = await api.post(`/_deepspace/agent/browser/tools/${tool}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { input },
+  })
+  return (await res.json()) as { ok: boolean; result?: any; error?: string }
+}
+
+/** The clip as `user` sees it on the server, or null if they can't read it. */
+async function readClip(user: MultiplayerUser, recordId: string) {
+  const reply = await callTool(user, 'records_get', { collection: 'clips', recordId })
+  return reply.ok ? reply.result.data : null
+}
+
+test("another user cannot see A's draft, or edit or delete A's clips", async ({ users }) => {
+  const [a, b] = await users(2)
+
+  // A signed-in visit creates each user's row in the app (their membership).
+  for (const user of [a, b]) {
+    await user.page.goto('/home')
+    await expect(user.page.getByTestId('nav-user-name')).toHaveText(/\S/, { timeout: 15_000 })
+  }
+
+  const stamp = Date.now()
+  const draftId = `test-draft-${stamp}`
+  const publishedId = `test-published-${stamp}`
+  const draftTitle = `__test-${stamp}__ draft`
+  const publishedTitle = `__test-${stamp}__ published`
+
+  try {
+    // A creates one draft and one published clip.
+    for (const [recordId, title, status] of [
+      [draftId, draftTitle, 'draft'],
+      [publishedId, publishedTitle, 'published'],
+    ]) {
+      const created = await callTool(a, 'records_create', {
+        collection: 'clips',
+        recordId,
+        data: { title, abc: EXAMPLE_ABC, status },
+      })
+      expect(created.ok, created.error).toBe(true)
+    }
+
+    // ── Server: what B's direct calls can do ──
+    // B can read the published clip but not the draft.
+    expect((await readClip(b, publishedId))?.title).toBe(publishedTitle)
+    expect(await readClip(b, draftId)).toBeNull()
+    const listed = await callTool(b, 'records_query', { collection: 'clips' })
+    const listedIds = listed.result.data.records.map((r: { recordId: string }) => r.recordId)
+    expect(listedIds).toContain(publishedId)
+    expect(listedIds).not.toContain(draftId)
+
+    // B's edits and deletes are refused, for the published clip and the draft.
+    for (const recordId of [publishedId, draftId]) {
+      const edit = await callTool(b, 'records_update', {
+        collection: 'clips',
+        recordId,
+        data: { title: 'changed by B' },
+      })
+      expect(edit.ok).toBe(false)
+      const remove = await callTool(b, 'records_delete', { collection: 'clips', recordId })
+      expect(remove.ok).toBe(false)
+    }
+    // B cannot unpublish A's clip either (that is an update of `status`).
+    const unpublish = await callTool(b, 'records_update', {
+      collection: 'clips',
+      recordId: publishedId,
+      data: { status: 'draft' },
+    })
+    expect(unpublish.ok).toBe(false)
+
+    // Both clips are still there, unchanged, as A sees them.
+    expect(await readClip(a, draftId)).toMatchObject({ title: draftTitle, status: 'draft' })
+    expect(await readClip(a, publishedId)).toMatchObject({ title: publishedTitle, status: 'published' })
+
+    // ── UI: what B's pages show ──
+    await b.page.goto(`/clips/${publishedId}`)
+    await expect(b.page.getByTestId('clip-title')).toHaveText(publishedTitle, { timeout: 15_000 })
+    await expect(b.page.getByTestId('owner-actions')).toHaveCount(0)
+
+    await b.page.goto(`/clips/${draftId}`)
+    await expect(b.page.getByText("it's a draft you don't own")).toBeVisible({ timeout: 15_000 })
+
+    await b.page.goto(`/edit/${publishedId}`)
+    await expect(b.page.getByText('You can only edit your own clips.')).toBeVisible({ timeout: 15_000 })
+
+    await b.page.goto('/home')
+    await expect(b.page.getByText(publishedTitle)).toBeVisible({ timeout: 15_000 })
+    await expect(b.page.getByText(draftTitle)).toHaveCount(0)
+
+    // A, the owner, does get the owner actions, and sees the draft.
+    await a.page.goto(`/clips/${draftId}`)
+    await expect(a.page.getByTestId('clip-title')).toHaveText(draftTitle, { timeout: 15_000 })
+    await expect(a.page.getByTestId('owner-actions')).toBeVisible()
+  } finally {
+    // Clean up as the owner, whatever happened above.
+    for (const recordId of [draftId, publishedId]) {
+      await callTool(a, 'records_delete', { collection: 'clips', recordId }).catch(() => {})
+    }
+  }
 })
