@@ -10,7 +10,7 @@
  * uses; if it doesn't parse, the model gets one retry with the parse errors.
  */
 import type { Hono } from 'hono'
-import { generateText, type ModelMessage } from 'ai'
+import { APICallError, generateText, type ModelMessage } from 'ai'
 import { createDeepSpaceAI, DEEPSPACE_AI_DEFAULTS } from 'deepspace/worker'
 import { checkAbc } from '../lib/abc.js'
 import { CLIP_LIMITS } from '../schemas/clips-schema.js'
@@ -19,6 +19,10 @@ import type { AppContext } from '../../worker.js'
 
 export const MAX_PROMPT_LENGTH = 500
 const MAX_ATTEMPTS = 2
+// A clip is at most 5000 characters, roughly 2000 tokens. DeepSpace reserves
+// credits for the whole allowance before each call (64k tokens if unset), so
+// keep it small: that also bounds what one request can cost.
+const MAX_OUTPUT_TOKENS = 2000
 
 const SYSTEM_PROMPT = `You write short musical clips in ABC notation (ABC standard 2.1).
 Reply with ABC only: no explanation, no Markdown, no code fences.
@@ -55,11 +59,21 @@ export function registerAbcRoutes(app: Hono<AppContext>): void {
 
     let errors: string[] = []
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      const { text } = await generateText({
-        model: ai(DEEPSPACE_AI_DEFAULTS.directGeneration),
-        system: SYSTEM_PROMPT,
-        messages,
-      })
+      let text: string
+      try {
+        const result = await generateText({
+          model: ai(DEEPSPACE_AI_DEFAULTS.directGeneration),
+          system: SYSTEM_PROMPT,
+          messages,
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
+        })
+        text = result.text
+      } catch (err) {
+        if (APICallError.isInstance(err) && err.statusCode === 402) {
+          return c.json({ error: 'Not enough DeepSpace credits for an AI request.' }, 402)
+        }
+        throw err
+      }
       const abc = stripCodeFence(text)
       const check = checkAbc(abc)
       if (check.ok && abc.length <= CLIP_LIMITS.abc) return c.json({ abc })
