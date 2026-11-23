@@ -12,23 +12,25 @@ Q:1/4=90
 K:Dm
 "Dm"D2 F2 A2 d2 | "Bb"B,2 D2 F2 B2 | "C"C2 E2 G2 c2 | "A"A,2 ^C2 E2 A2 |]`
 
-export type AbcCheck = { ok: true; warnings: string[] } | { ok: false; error: string }
+export type AbcCheck = { ok: true } | { ok: false; errors: string[] }
 
 /**
- * abcjs is forgiving: it rarely throws, it just skips what it can't read.
- * So "valid" here means: it produced a tune with at least one line of music.
- * Parser warnings are returned so the UI can show them.
+ * abcjs is forgiving: it rarely throws, it skips what it can't read and adds
+ * a warning ("hello" parses as the single note "e" plus four warnings).
+ * So "valid" here is strict: there is a K: (key) header line, abcjs finds
+ * music, and it reports no warnings.
  */
 export function checkAbc(abc: string): AbcCheck {
-  if (abc.trim() === '') return { ok: false, error: 'The ABC is empty.' }
+  if (abc.trim() === '') return { ok: false, errors: ['The ABC is empty.'] }
+  if (!/^K:/m.test(abc)) return { ok: false, errors: ['ABC needs a K: (key) header line, e.g. K:C'] }
   try {
     const [tune] = abcjs.parseOnly(abc)
-    if (!tune || tune.lines.length === 0) {
-      return { ok: false, error: 'No music found. ABC needs a K: header line and some notes.' }
-    }
-    return { ok: true, warnings: tune.warnings ?? [] }
+    if (!tune || tune.lines.length === 0) return { ok: false, errors: ['No music found after the headers.'] }
+    // abcjs warnings contain HTML markup; keep them as plain text.
+    const warnings = (tune.warnings ?? []).map((w) => w.replace(/<[^>]*>/g, ''))
+    return warnings.length > 0 ? { ok: false, errors: warnings } : { ok: true }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+    return { ok: false, errors: [err instanceof Error ? err.message : String(err)] }
   }
 }
 

@@ -109,21 +109,13 @@ export function ClipForm({ initial, ready, onSave }: Props) {
       <div className="flex flex-col gap-3">
         <h2 className="text-sm font-medium text-muted-foreground">Preview</h2>
         {check.ok ? (
-          <>
-            <AbcView abc={values.abc} />
-            {check.warnings.length > 0 && (
-              <ul className="text-xs text-amber-600" data-testid="abc-warnings">
-                {check.warnings.map((w, i) => (
-                  // abcjs warnings contain HTML markup; show them as plain text.
-                  <li key={i}>{w.replace(/<[^>]*>/g, '')}</li>
-                ))}
-              </ul>
-            )}
-          </>
+          <AbcView abc={values.abc} />
         ) : (
-          <p className="text-sm text-destructive" data-testid="abc-error">
-            {check.error}
-          </p>
+          <ul className="flex flex-col gap-1 text-sm text-destructive" data-testid="abc-error">
+            {check.errors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
         )}
       </div>
     </div>
