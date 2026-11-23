@@ -152,10 +152,11 @@ async function callTool(user: MultiplayerUser, tool: string, input: Record<strin
   return (await res.json()) as { ok: boolean; result?: any; error?: string }
 }
 
-/** The clip as `user` sees it on the server, or null if they can't read it. */
+/** The clip's fields as `user` reads them from the server. */
 async function readClip(user: MultiplayerUser, recordId: string) {
   const reply = await callTool(user, 'records_get', { collection: 'clips', recordId })
-  return reply.ok ? reply.result.data : null
+  expect(reply.ok, reply.error).toBe(true)
+  return reply.result.data.record.data
 }
 
 test("another user cannot see A's draft, or edit or delete A's clips", async ({ users }) => {
@@ -189,8 +190,10 @@ test("another user cannot see A's draft, or edit or delete A's clips", async ({ 
 
     // ── Server: what B's direct calls can do ──
     // B can read the published clip but not the draft.
-    expect((await readClip(b, publishedId))?.title).toBe(publishedTitle)
-    expect(await readClip(b, draftId)).toBeNull()
+    expect((await readClip(b, publishedId)).title).toBe(publishedTitle)
+    const draftRead = await callTool(b, 'records_get', { collection: 'clips', recordId: draftId })
+    expect(draftRead.ok).toBe(false)
+    expect(draftRead.error).toContain('READ DENIED')
     const listed = await callTool(b, 'records_query', { collection: 'clips' })
     const listedIds = listed.result.data.records.map((r: { recordId: string }) => r.recordId)
     expect(listedIds).toContain(publishedId)
@@ -204,8 +207,10 @@ test("another user cannot see A's draft, or edit or delete A's clips", async ({ 
         data: { title: 'changed by B' },
       })
       expect(edit.ok).toBe(false)
+      expect(edit.error).toContain('UPDATE DENIED')
       const remove = await callTool(b, 'records_delete', { collection: 'clips', recordId })
       expect(remove.ok).toBe(false)
+      expect(remove.error).toContain('DELETE DENIED')
     }
     // B cannot unpublish A's clip either (that is an update of `status`).
     const unpublish = await callTool(b, 'records_update', {
@@ -214,6 +219,7 @@ test("another user cannot see A's draft, or edit or delete A's clips", async ({ 
       data: { status: 'draft' },
     })
     expect(unpublish.ok).toBe(false)
+    expect(unpublish.error).toContain('UPDATE DENIED')
 
     // Both clips are still there, unchanged, as A sees them.
     expect(await readClip(a, draftId)).toMatchObject({ title: draftTitle, status: 'draft' })

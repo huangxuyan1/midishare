@@ -66,8 +66,10 @@ Checks:
 npx tsc --noEmit
 npx eslint src
 npx vitest run             # 28 unit tests: schema permissions, ABC validation, ABC <-> notes
-npm run test:e2e           # Playwright; the two-user specs need two DeepSpace test accounts
+npm run test:e2e           # Playwright; the two-user ownership test needs two DeepSpace test accounts
 ```
+
+The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's direct server calls to read A's draft, or to edit, unpublish or delete A's clips, come back `READ DENIED`, `UPDATE DENIED` and `DELETE DENIED`.
 
 ## Known limits
 

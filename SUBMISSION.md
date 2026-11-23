@@ -56,6 +56,12 @@ A coding agent (Claude Code) wrote most of the code. I made the product and arch
   - Adding one note in the roll turned 48 notes into 60. abcjs does not follow a tie inside a chord the way the writer assumed, so the writer now puts overlapping notes into separate voices.
   - Dragging a note did nothing, because the drag state lived in React state and the pointer events arrived before the re-render. It now lives in a ref.
 
+## How ownership was verified
+
+- A Playwright test signs in two test accounts (`tests/collab.spec.ts`). User A creates a draft and a published clip. User B then calls the server directly, without the UI: the draft is `READ DENIED` and missing from B's query, and edit, unpublish and delete are `UPDATE DENIED` / `DELETE DENIED` on both clips. A reads both clips back unchanged. B's pages show no owner actions and no draft.
+- The test fails when the rule is loosened: with member `update: true` in the schema, B's edit is accepted and the test goes red.
+- A unit test checks the permission rules against the SDK's own `canRead`/`canUpdate`/`canDelete`.
+
 ## What I verified myself
 
 - I signed in on the live site. The agent then drove the full path in my session: create, save as draft, publish, edit, unpublish, copy ABC, delete.
@@ -65,7 +71,7 @@ A coding agent (Claude Code) wrote most of the code. I made the product and arch
 
 ## Not finished
 
-- **TODO: the two-user ownership test has not run yet.** The spec is written (`tests/collab.spec.ts`): user B cannot read A's draft and cannot edit, unpublish or delete A's clips, checked with direct server calls and in the UI. It needs two DeepSpace test accounts. Until it runs, the evidence for ownership is the unit test of the permission rules against the SDK's own `canRead`/`canUpdate`/`canDelete`, and the single-user checks on the live site.
+- **The two-user ownership test ran on the local dev worker, not on the live URL.** It runs the same RecordRoom and schema as the deploy, but I did not repeat it with two accounts on midishare.app.space.
 - **No `.mid` import.** This is the next feature I would build: parse the file in the browser, quantize to the 16th grid, and reuse the notes → ABC writer.
 - **The Ableton bridge is not switched to ABC.** My `midi-clipboard` project copies notes between Ableton Live and the clipboard in its own format. Until it writes ABC, moving a clip between the site and Ableton is not a single paste.
 - **Small edges:** `/new` starts with an empty title while the example ABC says `T:Example`; in keys without flats, B♭ is spelled `^A`; browse and search run in the browser, which is fine at this size.
