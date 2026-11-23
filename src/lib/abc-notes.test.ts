@@ -31,6 +31,14 @@ describe('abcToNotes', () => {
     expect(notes.length).toBeGreaterThan(2) // the melody plus bass and chord notes
     expect(notes.some((n) => n.pitch < 50)).toBe(true) // a bass note under the melody
   })
+
+  it('reads lengths that are not one written note value', () => {
+    // F5 is five eighths (10 sixteenths); z5 pushes the last note to the end of bar 2.
+    expect(abcToNotes(`${HEAD}K:C\nF5 z3 | z5 A3 |]`)).toEqual([
+      { pitch: 65, start: 0, length: 10 },
+      { pitch: 69, start: 26, length: 6 },
+    ])
+  })
 })
 
 describe('notes -> ABC -> notes', () => {

@@ -19,15 +19,24 @@ export type AbcCheck = { ok: true } | { ok: false; errors: string[] }
  * a warning ("hello" parses as the single note "e" plus four warnings).
  * So "valid" here is strict: there is a K: (key) header line, abcjs finds
  * music, and it reports no warnings.
+ *
+ * One warning is allowed: "Duration not representable". The ABC standard
+ * permits a length that isn't one written note value, such as z5 or F5 (five
+ * eighths), and MIDI exports produce them. abcjs reads and plays the length
+ * correctly; it only can't draw it as one symbol, so the sheet music shows
+ * the nearest shape.
  */
+const DRAWING_ONLY_WARNING = 'Duration not representable'
+
 export function checkAbc(abc: string): AbcCheck {
   if (abc.trim() === '') return { ok: false, errors: ['The ABC is empty.'] }
   if (!/^K:/m.test(abc)) return { ok: false, errors: ['ABC needs a K: (key) header line, e.g. K:C'] }
   try {
     const [tune] = abcjs.parseOnly(abc)
     if (!tune || tune.lines.length === 0) return { ok: false, errors: ['No music found after the headers.'] }
-    // abcjs warnings contain HTML markup; keep them as plain text.
-    const warnings = (tune.warnings ?? []).map((w) => w.replace(/<[^>]*>/g, ''))
+    const warnings = (tune.warnings ?? [])
+      .map((w) => w.replace(/<[^>]*>/g, '')) // abcjs warnings contain HTML markup; keep them as plain text
+      .filter((w) => !w.includes(DRAWING_ONLY_WARNING))
     return warnings.length > 0 ? { ok: false, errors: warnings } : { ok: true }
   } catch (err) {
     return { ok: false, errors: [err instanceof Error ? err.message : String(err)] }

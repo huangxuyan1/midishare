@@ -48,7 +48,7 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 | Sheet music | abcjs rendering only; it has no player of its own. | `src/components/AbcView.tsx` |
 | ABC ↔ notes | ABC → notes via abcjs `setUpAudio`. Notes → ABC: same start and length form a chord; overlapping chords go into separate voices. Lengths are split into writable values and tied. | `src/lib/abc-notes.ts`, `src/lib/abc-headers.ts` (+ tests) |
 | AI assistant | `POST /api/abc/generate` (JWT required, prompt ≤500, currentAbc ≤5000). `createDeepSpaceAI(env,'anthropic',{authToken})`, `maxOutputTokens: 2000`. Validated with `checkAbc`, retried once with the errors, then 502. | `src/server/abc-routes.ts`, `src/components/AiAssist.tsx` |
-| Validation | `checkAbc`: requires a `K:` line, at least one parsed line, zero abcjs warnings. | `src/lib/abc.ts` |
+| Validation | `checkAbc`: requires a `K:` line, at least one parsed line, zero abcjs warnings. The "Duration not representable" warning is ignored: lengths like `z5` are legal ABC, play correctly, and the sheet draws the nearest shape. | `src/lib/abc.ts` |
 | Record tools | `registerAgent` mounts the record tools under `/_deepspace/agent`. `deepspace agent invoke` and the two-user test use them. | `src/ai/agent.ts`, `src/ai/tools.ts` |
 | Tests | Unit: schema permissions, ABC validation, ABC ↔ notes, undo history. Playwright: smoke, API, two-user ownership, editor undo/redo, read-only roll. | `src/**/*.test.ts`, `tests/` |
 

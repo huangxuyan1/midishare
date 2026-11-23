@@ -22,6 +22,18 @@ describe('checkAbc', () => {
     // abcjs reads the "e" in "hello" as a note and warns about the rest.
     expect(checkAbc('X:1\nK:C\nhello').ok).toBe(false)
   })
+
+  it('accepts lengths that are not one written note value', () => {
+    // Five eighths: legal ABC, but abcjs warns that it can't draw it as one symbol.
+    expect(checkAbc('X:1\nM:4/4\nL:1/8\nK:C\nz2 A z5 |]')).toEqual({ ok: true })
+    expect(checkAbc('X:1\nM:4/4\nL:1/8\nK:C\nF5 z3 |]')).toEqual({ ok: true })
+  })
+
+  it('still reports other warnings next to an odd length', () => {
+    const check = checkAbc('X:1\nM:4/4\nL:1/8\nK:C\nz5 hello |]')
+    expect(check.ok).toBe(false)
+    if (!check.ok) expect(check.errors.join(' ')).not.toContain('Duration not representable')
+  })
 })
 
 describe('parseTags', () => {

@@ -237,6 +237,19 @@ test('the editor undoes and redoes changes', async ({ users }) => {
   await expect(title).toHaveValue(`${titleBefore} v2`)
 })
 
+test('the editor accepts a length that is not one written note value', async ({ users }) => {
+  const [a] = await users(1)
+  await a.page.goto('/new')
+  const notes = a.page.getByTestId('roll-note')
+  await expect(notes.first()).toBeVisible({ timeout: 15_000 })
+
+  // F5 and z5 are five eighths: legal ABC that abcjs warns about but reads correctly.
+  await a.page.getByLabel('ABC notation').fill('X:1\nT:Odd lengths\nM:4/4\nL:1/8\nK:C\nF5 z3 | z5 A3 |]')
+  await expect(a.page.getByTestId('abc-error')).toHaveCount(0)
+  await expect(a.page.getByTestId('abc-notation').locator('svg')).toBeVisible()
+  await expect(notes).toHaveCount(2)
+})
+
 test('the clip page shows a read-only piano roll with a transport', async ({ users }) => {
   const [a] = await users(1)
   await a.page.goto('/home')
