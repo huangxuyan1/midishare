@@ -9,11 +9,11 @@ For the next agent session. Read this first, then [CLAUDE.md](../CLAUDE.md) (wor
 The app is finished and submittable. What is left is Xuyan's own checking and the submission note.
 
 - **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
-  - Latest release: `rel_01M855B4E2QAE6VE2FB3D7HDKF`, commit `9fb13e5`, `dirty: false`. Every commit after it changes only docs.
+  - Latest release: `rel_01M856WAZ005S3KX5CPDVXPC75`, commit `d03325e`, `dirty: false`. Every commit after it changes only docs.
 - **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`. Everything is committed and pushed.
   - The DeepSpace source is GitHub. **Never run `deepspace push`.**
 - **Data:** 5 published example clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan. Xuyan had not listened to them when they were published.
-- **Tests:** 35 unit tests and 12 Playwright tests pass. Type-check and lint are clean.
+- **Tests:** 38 unit tests and 14 Playwright tests pass. Type-check and lint are clean.
   - `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`
   - `npx deepspace test run all --port 5187` (port 5173 belongs to another dev server; don't kill it)
 - **Test accounts:** "Test A" and "Test B" exist. The Playwright fixture signs them in from the CLI's saved credentials.
@@ -24,7 +24,7 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 1. **Xuyan, by ear.** Press Play in the editor and on a clip page. Confirm that sound comes out and that it lines up with the playhead. Try the space bar. Listen to the five example clips; unpublish or delete any that sound wrong.
 2. **Xuyan, the submission note.** Edit [SUBMISSION.md](SUBMISSION.md) and resolve its two TODO lines (the by-ear check, and any code Xuyan changed by hand). Then submit in the portal: live URL, repository, note.
 3. **After any code change:** run the checks, commit, deploy, and confirm `dirty: false`. Verify the changed path on the live URL. Add rows to BUILD_LOG.md.
-4. **Next, asked for by Xuyan in session 3: a complete UI change.** The current look is the scaffold's default; DeepSpace's example apps each have their own design. Agree on the direction with Xuyan before building.
+4. **Done in session 3: the Studio UI.** Xuyan has not reviewed it by eye yet. Changes to colours, fonts or layout go through `src/themes.css` (the `studio` block), `src/styles.css` (app tokens) and the page files in the table below.
 5. **Optional polish**, only if Xuyan asks:
    - `/new` starts with an empty title while the example ABC has `T:Example`
    - in keys without flats (C, Am…), B♭ is spelled `^A`
@@ -39,9 +39,9 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 |---|---|---|
 | Data | `clips` collection: title, description, tags (comma text), abc, status `draft`/`published`, source `pasted`/`ai`. Server-side maxLength (title 100, description 1000, tags 200, abc 5000). | `src/schemas/clips-schema.ts` (+ `.test.ts`) |
 | Permissions | Anyone, including signed-out viewers, reads `published` clips. Members create, and update/delete their own (`'own'`). Admins can delete any clip. Drafts are visible only to their owner (`visibilityField` on status). | same |
-| Landing | `/`: static page with a short description and a link to `/home`. | `src/pages/index.tsx`, `src/seo.ts` |
-| Browse | `/home`: My clips + Published, newest first, `?q=` (title/tag) and `?tag=` | `src/pages/(app)/home.tsx` |
-| Clip page | `/clips/:id`: read-only piano roll with the transport, sheet music, Download .mid, Copy ABC, Show ABC, Make a variation. Owner: Edit, Publish/Unpublish, Delete (confirm dialog). | `src/pages/(app)/clips/[id].tsx`, `src/components/ClipPlayer.tsx` |
+| Landing | `/`: static, prerendered. A Design Direction comment at the top of the file, the headline, a demo clip with a CSS playhead sweep, a numbered list, a closing link. No hardcoded colours in JSX. | `src/pages/index.tsx`, `src/components/landing/` (+ test), `src/seo.ts` |
+| Library | `/home`: My clips + Published as cards, newest first, `?q=` (title/tag) and `?tag=`. Each card has a mini piano roll that runs a silent preview on hover. Signed-out visitors see the same library and a sign-in line. | `src/pages/(app)/home.tsx`, `src/components/ClipCard.tsx`, `MiniRoll.tsx` |
+| Clip page | `/clips/:id`: transport and read-only piano roll in one panel, tabs for sheet music and ABC text, Copy ABC, Download .mid, Make a variation. Owner: Edit, Publish/Unpublish, Delete (the dialog names the clip). | `src/pages/(app)/clips/[id].tsx`, `src/components/ClipPlayer.tsx` |
 | Editor | `/new`, `/new?from=<id>` (variation), `/edit/:id`. The ABC text is the single source of truth. The piano roll, the title/tempo/meter/key fields and the sheet preview are views that write back to it. Each clip gets its own form instance (`key`). Undo/redo covers every field: the form's values live in a history, a burst of typing is one step, and Ctrl+Z / Ctrl+Y work next to the Undo and Redo buttons. | `src/components/ClipForm.tsx`, `MetadataFields.tsx`, `src/lib/history.ts` (+ test) |
 | Piano roll | SVG, 16th grid, C2–B6. Double-click adds a note; drag moves it; dragging the right edge resizes it; double-clicking a note deletes it. Read-only when `onChange` is left out. | `src/components/PianoRoll.tsx` |
 | Transport | Play / Stop (keeps the playhead) / Reset, bar.beat counter, amber playhead, sounding notes turn amber, follow-scroll. The space bar toggles play/stop. Used by the editor and the clip page. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
@@ -54,6 +54,13 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 
 Sound comes from abcjs's synth, which downloads piano samples from a third-party host at play time. See MODULAR_AUDIO_ENGINE.md.
 
+### Design
+
+- **Theme:** `studio` (`src/themes.css`), selected in `index.html`. Warm near-black panels and one amber accent. Amber marks what is playing and the main action; a resting note is pale.
+- **Fonts:** IBM Plex Sans and IBM Plex Mono, loaded from Google Fonts in `index.html`. Mono is for the headline, small labels (`LEGEND` in `src/lib/utils.ts`), counters and ABC text.
+- **App tokens** (piano roll, note, keyboard, paper) are in the `@theme` block of `src/styles.css`, so classes like `bg-roll` and `fill-note` exist.
+- **Rules followed**, from docs.deep.space/design: no hardcoded colours in the landing files, kit primitives instead of browser defaults (`Select`, tooltips via `Tip`, `ConfirmModal`, `EmptyState`), `/* home pattern: … */` as the first line of `home.tsx`. The gate greps are in BUILD_LOG.md.
+
 ## 4. Decisions already made by Xuyan (don't reopen)
 
 - App name `midishare`; public GitHub source.
@@ -63,9 +70,12 @@ Sound comes from abcjs's synth, which downloads piano samples from a third-party
 - Chord symbols become real notes in the roll, and the roll writes notes back. The round trip doesn't have to give back identical ABC.
 - The clip page shows the piano roll too, read-only.
 - The space bar toggles play/stop.
+- Undo/redo in the editor.
+- The UI direction is "Studio (dark DAW)".
 - Repo cleanup: process docs live in `docs/`; the unmounted AI chat routes and the `/api-status` page are removed; the installed skill copies are gitignored.
 - The Modular audio engine is a separate task, set aside.
 - **Chosen by the agent; Xuyan may change these:**
+  - Inside the Studio direction: the exact colours, IBM Plex, no light mode, "New clip" as a button in the bar, Settings hidden when signed out.
   - A key change keeps the pitches and re-spells them; it does not transpose.
   - Stop keeps the playhead where it is.
   - The example clips carry source `ai`, so they show the "AI-generated" badge.
@@ -84,6 +94,8 @@ Sound comes from abcjs's synth, which downloads piano samples from a third-party
 - **Pointer capture:** the piano roll captures the pointer on the dragged note, not on the SVG. Click and double-click go to the capturing element, so capturing on the SVG broke double-click-to-delete. Test mouse behaviour with real input (Playwright), not dispatched events.
 - **abcjs `onEnded`** also fires on a manual stop. `use-playback.ts` detects the end from the duration `prime()` returns.
 - **AI credits:** an unset `maxOutputTokens` reserves 64k tokens of credits up front and fails with 402. Keep the 2000 cap.
+- **Screenshots:** the browser pane can be hidden, and then it gives no pictures. A temporary Playwright spec that calls `page.screenshot()` into the scratchpad works every time (delete the spec afterwards).
+- **Line endings in scripts:** many files are CRLF on disk. Normalise to LF before matching text and write the original ending back.
 - **Built-in browser pane:**
   - The screenshot frame isn't the same size as the CSS viewport. Use refs or in-page scripts instead of coordinates.
   - For timing-sensitive checks, drive the page from one in-page script.
