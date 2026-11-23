@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { abcToNotes, keySignature, notesToAbcBody, sortNotes, writeNotesIntoAbc, type Note } from './abc-notes'
 import { readHeaders, setHeader } from './abc-headers'
-import { checkAbc } from './abc'
+import { checkAbc, EXAMPLE_ABC } from './abc'
 
 const HEAD = 'X:1\nT:Test\nM:4/4\nL:1/8\nQ:1/4=90\n'
 
@@ -81,6 +81,15 @@ describe('notes -> ABC -> notes', () => {
     const notes = [{ pitch: 60, start: 0, length: 12 }, { pitch: 62, start: 12, length: 6 }]
     expect(roundTrip(notes, 'C', '3/4').back).toEqual(notes)
     expect(roundTrip(notes, 'G', '6/8').back).toEqual(notes)
+  })
+
+  it('round-trips the example clip, writing overlapping parts as separate voices', () => {
+    // Its chord symbols expand into bass and chord notes under the melody.
+    const notes = abcToNotes(EXAMPLE_ABC)
+    const abc = writeNotesIntoAbc(EXAMPLE_ABC, notes)
+    expect(abc).toContain('V:1\nD2 F2 A2 d2 |')
+    expect(abc).toContain('V:2 clef=bass')
+    expect(abcToNotes(abc)).toEqual(notes)
   })
 
   it('writes an empty clip as one bar of rest', () => {

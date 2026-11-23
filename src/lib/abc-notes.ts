@@ -4,11 +4,16 @@
  * - ABC -> notes uses abcjs's own audio setup, so the roll shows exactly what
  *   you hear: key signatures and ties resolved, chord symbols ("Dm") expanded
  *   into real notes.
- * - notes -> ABC writes the music lines for a single voice. The timeline is
- *   cut at every note start/end and every bar line; each piece becomes a
- *   chord (or a rest), and a note that continues into the next piece gets a
- *   tie (-). That is lossy for things like triplets, which get snapped to the
- *   grid, but every note keeps its pitch, start and length.
+ * - notes -> ABC writes the music lines. Notes with the same start and length
+ *   become one chord. Chords that overlap go into separate voices (V:1, V:2,
+ *   ...), so inside a voice nothing overlaps. A chord that crosses a bar line,
+ *   or whose length isn't one written note value, is split and tied (-).
+ *   That is lossy for things like triplets, which get snapped to the grid,
+ *   but every note keeps its pitch, start and length.
+ *
+ *   Why voices: abcjs only follows a tie inside a chord into a next chord
+ *   that has the tied note in the same position, so "[CE-] E" plays the E
+ *   twice. Tying whole chords to identical chords always works.
  *
  * Times are in grid steps of a 16th note.
  */
@@ -79,23 +84,82 @@ export function writeNotesIntoAbc(abc: string, notes: Note[]): string {
   return [...headerLines, notesToAbcBody(notes, headers.meter, headers.unitLength, headers.key)].join('\n')
 }
 
+/** Notes that start together and have the same length: written as one chord. */
+type Chord = { start: number; length: number; pitches: number[] }
+
+const BARS_PER_LINE = 4
+
 export function notesToAbcBody(notes: Note[], meter: string, unitLength: string, key: string): string {
   const barSteps = barLengthInSteps(meter)
+  const end = Math.max(barSteps, ...notes.map((n) => n.start + n.length))
+  const barCount = Math.ceil(end / barSteps)
+
+  const voices = splitIntoVoices(notes)
+  const voiceBars = voices.map((chords) => writeVoice(chords, barCount, barSteps, unitLength, key))
+
+  // Four bars per line; the last bar line is the end mark |].
+  const lines: string[] = []
+  for (let first = 0; first < barCount; first += BARS_PER_LINE) {
+    const ending = first + BARS_PER_LINE >= barCount ? ' |]' : ' |'
+    voiceBars.forEach((bars, v) => {
+      if (voices.length > 1) lines.push(voiceLine(v, voices[v], first === 0))
+      lines.push(bars.slice(first, first + BARS_PER_LINE).join(' | ') + ending)
+    })
+  }
+  return lines.join('\n')
+}
+
+/** "V:2 clef=bass" the first time a low voice appears, "V:2" after that. */
+function voiceLine(index: number, chords: Chord[], first: boolean): string {
+  const pitches = chords.flatMap((c) => c.pitches)
+  const average = pitches.reduce((sum, p) => sum + p, 0) / pitches.length
+  return `V:${index + 1}` + (first && average < 60 ? ' clef=bass' : '')
+}
+
+/**
+ * Groups notes into chords, then hands each chord to the first voice that is
+ * free at that moment. Higher chords choose first, so the top line tends to
+ * stay in V:1. Always returns at least one voice.
+ */
+function splitIntoVoices(notes: Note[]): Chord[][] {
+  const byTime = new Map<string, Chord>()
+  for (const n of notes) {
+    const key = `${n.start}+${n.length}`
+    const chord = byTime.get(key) ?? { start: n.start, length: n.length, pitches: [] }
+    chord.pitches.push(n.pitch)
+    byTime.set(key, chord)
+  }
+  const top = (c: Chord) => Math.max(...c.pitches)
+  const chords = [...byTime.values()]
+    .map((c) => ({ ...c, pitches: [...c.pitches].sort((a, b) => a - b) }))
+    .sort((a, b) => a.start - b.start || top(b) - top(a)) // higher chords pick a voice first
+
+  const voices: Chord[][] = []
+  for (const chord of chords) {
+    const voice = voices.find((v) => {
+      const last = v[v.length - 1]
+      return last.start + last.length <= chord.start
+    })
+    if (voice) voice.push(chord)
+    else voices.push([chord])
+  }
+  return voices.length > 0 ? voices : [[]]
+}
+
+/** One voice (chords that never overlap) -> the text of each bar. */
+function writeVoice(chords: Chord[], barCount: number, barSteps: number, unitLength: string, key: string): string[] {
   const unitSteps = unitLengthInSteps(unitLength)
   const keyAccidentals = keySignature(key)
   const preferFlats = Object.values(keyAccidentals).some((a) => a < 0)
 
-  const end = Math.max(barSteps, ...notes.map((n) => n.start + n.length))
-  const barCount = Math.ceil(end / barSteps)
-
-  // Cut points: every note start and end, and every bar line.
+  // Cut points: every chord start and end, and every bar line.
   const cuts = new Set<number>()
   for (let bar = 0; bar <= barCount; bar++) cuts.add(bar * barSteps)
-  for (const n of notes) {
-    cuts.add(n.start)
-    cuts.add(n.start + n.length)
+  for (const c of chords) {
+    cuts.add(c.start)
+    cuts.add(c.start + c.length)
   }
-  const times = [...cuts].filter((t) => t <= barCount * barSteps).sort((a, b) => a - b)
+  const times = [...cuts].sort((a, b) => a - b)
 
   const bars: string[] = []
   let current: string[] = []
@@ -103,48 +167,32 @@ export function notesToAbcBody(notes: Note[], meter: string, unitLength: string,
   let barAccidentals: Record<string, number> = {}
 
   for (let i = 0; i < times.length - 1; i++) {
-    const sounding = notes
-      .filter((n) => n.start <= times[i] && n.start + n.length > times[i])
-      .sort((a, b) => a.pitch - b.pitch)
+    const chord = chords.find((c) => c.start <= times[i] && c.start + c.length > times[i])
 
     // A piece of e.g. 5 sixteenths isn't one written note value, so split it
-    // into ones that are (4 + 1) and tie the notes across the split.
+    // into ones that are (4 + 1) and tie the chord across the split.
     let from = times[i]
     for (const steps of splitIntoNoteValues(times[i + 1] - from)) {
       const to = from + steps
       const length = lengthText(steps, unitSteps)
-      if (sounding.length === 0) {
+      if (!chord) {
         current.push(`z${length}`)
       } else {
-        const parts = sounding.map((n) => {
-          const name = pitchText(n.pitch, keyAccidentals, barAccidentals, preferFlats)
-          const tie = n.start + n.length > to ? '-' : '' // keeps sounding after this piece
-          return { name, tie }
-        })
-        if (parts.length === 1) {
-          current.push(parts[0].name + length + parts[0].tie) // e.g. c2-
-        } else {
-          current.push(`[${parts.map((p) => p.name + p.tie).join('')}]${length}`) // e.g. [D-FA]2
-        }
+        const tie = chord.start + chord.length > to ? '-' : '' // keeps sounding after this piece
+        const names = chord.pitches.map((p) => pitchText(p, keyAccidentals, barAccidentals, preferFlats))
+        if (names.length === 1) current.push(names[0] + length + tie) // e.g. c2-
+        else current.push(`[${names.map((name) => name + tie).join('')}]${length}`) // e.g. [D-F-A-]2
       }
       from = to
     }
 
-    const to = times[i + 1]
-    if (to % barSteps === 0) {
+    if (times[i + 1] % barSteps === 0) {
       bars.push(current.join(' '))
       current = []
       barAccidentals = {}
     }
   }
-
-  // Four bars per line; the last bar line is the end mark |].
-  const lines: string[] = []
-  for (let i = 0; i < bars.length; i += 4) {
-    const isLast = i + 4 >= bars.length
-    lines.push(bars.slice(i, i + 4).join(' | ') + (isLast ? ' |]' : ' |'))
-  }
-  return lines.join('\n')
+  return bars
 }
 
 // ---------------------------------------------------------------------------
