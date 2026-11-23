@@ -36,7 +36,8 @@ export default function NewClipPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-semibold">{from ? 'New variation' : 'New clip'}</h1>
-      <ClipForm initial={initial} ready={ready} onSave={save} />
+      {/* The key starts a fresh form when the page switches between a variation and a blank clip. */}
+      <ClipForm key={fromId ?? 'blank'} initial={initial} ready={ready} onSave={save} />
     </div>
   )
 }

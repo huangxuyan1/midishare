@@ -34,7 +34,8 @@ export default function EditClipPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-semibold">Edit clip</h1>
-      <ClipForm initial={{ title, description, tags, abc, source }} ready={ready} onSave={save} />
+      {/* The key gives each clip its own form, so going from one clip's edit page to another's doesn't keep the old values. */}
+      <ClipForm key={clip.recordId} initial={{ title, description, tags, abc, source }} ready={ready} onSave={save} />
     </div>
   )
 }
