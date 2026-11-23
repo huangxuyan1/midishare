@@ -46,7 +46,7 @@ ABC is the one format everywhere: it is what's stored, what the AI writes, and w
 - **File storage.** A clip is under 5000 characters of text. The `.mid` file is made in the browser when you ask for it.
 - **Scheduled jobs, background jobs, presence, messaging, external integrations.** No feature needs them.
 
-The scaffold still mounts its Durable Objects for these (Yjs, canvas, presence, cron, jobs) in `worker.ts`, and its `/settings` and `/api-status` pages are still there. They are unused scaffold code, not features of this app.
+The scaffold's Durable Objects for these (Yjs, canvas, presence, cron, jobs) are still declared in `worker.ts`, because removing a deployed Durable Object class needs a migration. They are unused scaffold code, not features of this app. The scaffold's AI chat routes and its `/api-status` debug page were removed.
 
 ## Run it
 
@@ -83,4 +83,11 @@ The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's 
 
 ## How it was built
 
-A coding agent (Claude Code) wrote most of the code under direction. [BUILD_LOG.md](BUILD_LOG.md) is the running record: each decision, what the agent built, what was verified and how, and the bugs found on the live site.
+A coding agent (Claude Code) wrote most of the code under direction. The record of that is in [`docs/`](docs):
+
+- [BUILD_LOG.md](docs/BUILD_LOG.md): each decision, what the agent built, what was verified and how, and the bugs found on the live site.
+- [HANDOFF.md](docs/HANDOFF.md): the brief the agent started from.
+- [SESSION_HANDOFF.md](docs/SESSION_HANDOFF.md): the state and to-do list passed between agent sessions.
+- [SUBMISSION.md](docs/SUBMISSION.md): the submission note.
+
+[CLAUDE.md](CLAUDE.md) holds the working rules the agent follows, and [AGENTS.md](AGENTS.md) is the DeepSpace scaffold's own agent guide.

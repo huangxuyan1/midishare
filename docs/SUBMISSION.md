@@ -75,4 +75,4 @@ A coding agent (Claude Code) wrote most of the code. I made the product and arch
 - **No `.mid` import.** This is the next feature I would build: parse the file in the browser, quantize to the 16th grid, and reuse the notes → ABC writer.
 - **The Ableton bridge is not switched to ABC.** My `midi-clipboard` project copies notes between Ableton Live and the clipboard in its own format. Until it writes ABC, moving a clip between the site and Ableton is not a single paste.
 - **Small edges:** `/new` starts with an empty title while the example ABC says `T:Example`; in keys without flats, B♭ is spelled `^A`; browse and search run in the browser, which is fine at this size.
-- **Scaffold leftovers:** the scaffold's unused Durable Objects (Yjs, canvas, presence, cron, jobs) and its `/settings` and `/api-status` pages are still in the code.
+- **Scaffold leftovers:** the scaffold's unused Durable Objects (Yjs, canvas, presence, cron, jobs) are still declared in `worker.ts`, because removing a deployed Durable Object class needs a migration. The scaffold's AI chat routes and debug page were removed.

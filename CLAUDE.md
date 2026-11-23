@@ -1,7 +1,8 @@
 # deepspace-midi-share
 
 DeepSpace SWE Intern (Summer 2027) build exercise: an ABC-notation clip-sharing app on DeepSpace.
-**The full brief, decisions and schedule are in [HANDOFF.md](HANDOFF.md). Read it first.**
+**The full brief, decisions and schedule are in [HANDOFF.md](docs/HANDOFF.md). Read it first.**
+**Current state and the to-do list are in [SESSION_HANDOFF.md](docs/SESSION_HANDOFF.md) (last updated in session 2, 2026-11-23).**
 
 - Hard deadline: **Mon Nov 24, 2026, 11:59 PM ET**.
 - Read the DeepSpace agent skill (https://github.com/deepdotspace/deepspace-skill) and the quickstart (https://docs.deep.space) before writing code. Check CLI commands against the docs, not the brief.
@@ -19,7 +20,7 @@ DeepSpace SWE Intern (Summer 2027) build exercise: an ABC-notation clip-sharing 
 - Keep code plain and readable: Xuyan must explain and modify all of it in a live coding round.
 - Deploy early and often, and verify the important path on the live URL.
 - Don't submit anything in the careers portal.
-- Update [BUILD_LOG.md](BUILD_LOG.md) as you go: decisions, what the agent generated, what was verified and how. Don't reconstruct it afterwards.
+- Update [BUILD_LOG.md](docs/BUILD_LOG.md) as you go: decisions, what the agent generated, what was verified and how. Don't reconstruct it afterwards.
 
 ## Related
-- The Ableton bridge lives at `C:\Users\alvin\Documents\Projects\midi-clipboard` (outside this folder). Switching it to ABC is a separate workstream (HANDOFF.md section 5).
+- The Ableton bridge lives at `C:\Users\alvin\Documents\Projects\midi-clipboard` (outside this folder). Switching it to ABC is a separate workstream (docs/HANDOFF.md section 5).

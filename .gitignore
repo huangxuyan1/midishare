@@ -13,3 +13,6 @@ src/router.ts
 src/modals.tsx
 .claude/launch.json
 .claude/worktrees
+# Installed agent skill copies; skills-lock.json records the version.
+.agents/
+.claude/skills/
