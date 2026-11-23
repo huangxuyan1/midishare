@@ -4,7 +4,7 @@ You are picking up a build task for Xuyan's DeepSpace Software Engineering Inter
 
 ## 1. The assignment (from the DeepSpace careers portal)
 
-**Hard deadline: Monday, Nov 24, 2026, 11:59 PM ET** (portal: `2026-11-25T04:59:59Z`). The invite went out on Nov 19.
+**Hard deadline: Tuesday, Nov 24, 2026, 11:59 PM ET** (portal: `2026-11-25T04:59:59Z`). The invite went out on Nov 19.
 
 Brief, paraphrased:
 - Build and deploy a full-stack app on DeepSpace. The idea is the applicant's own. A focused, finished project beats a large, incomplete one. Choose a scope you can finish within the five-day window. If something is unfinished, say what you would do next.

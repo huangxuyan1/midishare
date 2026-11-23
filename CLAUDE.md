@@ -4,7 +4,7 @@ DeepSpace SWE Intern (Summer 2027) build exercise: an ABC-notation clip-sharing 
 **The full brief, decisions and schedule are in [HANDOFF.md](docs/HANDOFF.md). Read it first.**
 **Current state and the to-do list are in [SESSION_HANDOFF.md](docs/SESSION_HANDOFF.md) (last updated in session 2, 2026-11-23).**
 
-- Hard deadline: **Mon Nov 24, 2026, 11:59 PM ET**.
+- Hard deadline: **Tue Nov 24, 2026, 11:59 PM ET** (confirmed from the DeepSpace invite email on 2026-11-23).
 - Read the DeepSpace agent skill (https://github.com/deepdotspace/deepspace-skill) and the quickstart (https://docs.deep.space) before writing code. Check CLI commands against the docs, not the brief.
 - App name: `midishare` → https://midishare.app.space (decided 2026-11-20). The folder keeps its old name. Display name is `APP_NAME` in `src/constants.ts` and `[vars]` in `wrangler.toml`.
 - Source: GitHub, public repo `huangxuyan1/midishare`. The first deploy with that `origin` remote claims GitHub source permanently. Never run `deepspace push`.

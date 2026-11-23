@@ -2,7 +2,7 @@
 
 Written at the end of session 1 and updated during session 2 (same day) for the next agent session. Read this, then [HANDOFF.md](HANDOFF.md) (the original brief), [CLAUDE.md](../CLAUDE.md) (working rules) and [BUILD_LOG.md](BUILD_LOG.md) (everything done so far, with how it was verified).
 
-**Hard deadline: Mon Nov 24, 2026, 11:59 PM ET.** Xuyan submits in the careers portal. The agent never submits.
+**Hard deadline: Tue Nov 24, 2026, 11:59 PM ET.** Xuyan submits in the careers portal. The agent never submits.
 
 ## 1. Where things stand
 
