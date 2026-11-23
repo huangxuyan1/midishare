@@ -1,4 +1,4 @@
-# Session handoff — updated in session 3, 2026-11-23
+# Session handoff — end of session 3, 2026-11-23
 
 For the next agent session. Read this first, then [CLAUDE.md](../CLAUDE.md) (working rules). Open [HANDOFF.md](HANDOFF.md) (the original brief) and [BUILD_LOG.md](BUILD_LOG.md) (everything done, with how it was verified) when you need the detail.
 
@@ -24,7 +24,7 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 1. **Xuyan, by ear.** Press Play in the editor and on a clip page. Confirm that sound comes out and that it lines up with the playhead. Try the space bar. Listen to the five example clips; unpublish or delete any that sound wrong.
 2. **Xuyan, the submission note.** Edit [SUBMISSION.md](SUBMISSION.md) and resolve its two TODO lines (the by-ear check, and any code Xuyan changed by hand). Then submit in the portal: live URL, repository, note.
 3. **After any code change:** run the checks, commit, deploy, and confirm `dirty: false`. Verify the changed path on the live URL. Add rows to BUILD_LOG.md.
-4. **Done in session 3: the Studio UI.** Xuyan has not reviewed it by eye yet. Changes to colours, fonts or layout go through `src/themes.css` (the `studio` block), `src/styles.css` (app tokens) and the page files in the table below.
+4. **Done in session 3: the Studio UI.** Xuyan looked at it and approved it ("really, really cool"). Changes to colours, fonts or layout go through `src/themes.css` (the `studio` block), `src/styles.css` (app tokens) and the page files in the table below.
 5. **Optional polish**, only if Xuyan asks:
    - `/new` starts with an empty title while the example ABC has `T:Example`
    - in keys without flats (C, Am…), B♭ is spelled `^A`

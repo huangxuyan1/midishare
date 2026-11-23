@@ -69,7 +69,7 @@ A coding agent (Claude Code) wrote most of the code. I made the product and arch
 - I signed in on the live site. The agent then drove the full path in my session: create, save as draft, publish, edit, unpublish, copy ABC, delete.
 - I found the dark-mode bug where the piano roll's keyboard colors were inverted. The agent fixed it.
 - **TODO (Xuyan):** press Play in the editor and on a clip page, and confirm that sound comes out, that it lines up with the playhead, and that the clip page's button returns to Play at the end. The agent could check the playhead's timing but cannot hear.
-- **TODO (Xuyan):** look at the Studio design on the live site (landing, library, a clip, the editor, on a phone too) and say what to change. Until then, "defaults I left in place" above is not true for the colours and fonts.
+- I reviewed the Studio design after the agent built it and kept it as it is.
 - **TODO (Xuyan):** list anything you changed in the code by hand.
 
 ## Not finished

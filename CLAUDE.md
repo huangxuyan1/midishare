@@ -2,7 +2,7 @@
 
 DeepSpace SWE Intern (Summer 2027) build exercise: an ABC-notation clip-sharing app on DeepSpace.
 **The full brief, decisions and schedule are in [HANDOFF.md](docs/HANDOFF.md). Read it first.**
-**Current state and the to-do list are in [SESSION_HANDOFF.md](docs/SESSION_HANDOFF.md) (updated in session 3, 2026-11-23).**
+**Current state and the to-do list are in [SESSION_HANDOFF.md](docs/SESSION_HANDOFF.md) (end of session 3, 2026-11-23).**
 
 - Hard deadline: **Tue Nov 24, 2026, 11:59 PM ET** (confirmed from the DeepSpace invite email on 2026-11-23).
 - Read the DeepSpace agent skill (https://github.com/deepdotspace/deepspace-skill) and the quickstart (https://docs.deep.space) before writing code. Check CLI commands against the docs, not the brief.
