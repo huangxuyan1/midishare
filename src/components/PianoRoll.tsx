@@ -8,6 +8,9 @@
  *
  * Everything snaps to a 16th-note grid. While you drag, the roll shows a local
  * copy of the notes; onChange is called once, when you let go.
+ *
+ * Without onChange the roll is read-only: it only shows the notes and the
+ * playhead. The clip page uses it that way.
  */
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
 import { sortNotes, type Note } from '@/lib/abc-notes'
@@ -35,7 +38,8 @@ type Props = {
   notes: Note[]
   /** Length of one bar in 16ths (16 for 4/4, 12 for 3/4 or 6/8). */
   barSteps: number
-  onChange: (notes: Note[]) => void
+  /** Called with the new notes after an edit. Leave it out for a read-only roll. */
+  onChange?: (notes: Note[]) => void
   /** Playhead position in 16ths (see usePlayback). */
   playhead: number
   /** While playing, sounding notes light up and the view follows the playhead. */
@@ -50,10 +54,12 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Prop
   const drag = useRef<Drag | null>(null)
   const [dragged, setDragged] = useState<{ index: number; note: Note } | null>(null) // what to draw
   const [newLength, setNewLength] = useState(2) // new notes copy the last length you used
+  const editable = onChange !== undefined
 
   const shown = dragged ? notes.map((n, i) => (i === dragged.index ? dragged.note : n)) : notes
   const lastEnd = Math.max(0, ...shown.map((n) => n.start + n.length))
-  const bars = Math.max(4, Math.ceil(lastEnd / barSteps) + 1) // always one empty bar to grow into
+  // When editing: at least 4 bars, and always one empty bar to grow into.
+  const bars = editable ? Math.max(4, Math.ceil(lastEnd / barSteps) + 1) : Math.max(1, Math.ceil(lastEnd / barSteps))
   const steps = bars * barSteps
   const rows = HIGHEST - LOWEST + 1
   const width = KEYS_W + steps * STEP_W
@@ -89,11 +95,11 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Prop
     const { x, y } = pointInGrid(e)
     if (x < 0) return
     const note = { pitch: pitchAt(y), start: Math.floor(x / STEP_W), length: newLength }
-    onChange(sortNotes([...notes, note]))
+    onChange?.(sortNotes([...notes, note]))
   }
 
   function deleteNote(index: number) {
-    onChange(notes.filter((_, i) => i !== index))
+    onChange?.(notes.filter((_, i) => i !== index))
   }
 
   function startDrag(e: PointerEvent, index: number) {
@@ -131,7 +137,7 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Prop
     if (d) {
       if (d.mode === 'resize') setNewLength(d.changed.length)
       if (JSON.stringify(d.changed) !== JSON.stringify(d.original)) {
-        onChange(sortNotes(notes.map((n, i) => (i === d.index ? d.changed : n))))
+        onChange?.(sortNotes(notes.map((n, i) => (i === d.index ? d.changed : n))))
       }
     }
     cancelDrag()
@@ -193,7 +199,9 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Prop
         })}
 
         {/* Double-click target for adding notes (behind the notes). */}
-        <rect x={KEYS_W} y={0} width={steps * STEP_W} height={height} fill="transparent" onDoubleClick={addNote} />
+        {editable && (
+          <rect x={KEYS_W} y={0} width={steps * STEP_W} height={height} fill="transparent" onDoubleClick={addNote} />
+        )}
 
         {shown.map((n, i) => {
           const sounding = playing && n.start <= playhead && playhead < n.start + n.length
@@ -208,14 +216,22 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Prop
             height={ROW_H - 2}
             rx={2}
             className={sounding ? 'fill-amber-400' : dragged?.index === i ? 'fill-primary/70' : 'fill-primary'}
-            style={{ cursor: 'grab' }}
-            onPointerDown={(e) => startDrag(e, i)}
-            onDoubleClick={(e) => {
-              e.stopPropagation()
-              deleteNote(i)
-            }}
+            style={{ cursor: editable ? 'grab' : 'default' }}
+            onPointerDown={editable ? (e) => startDrag(e, i) : undefined}
+            onDoubleClick={
+              editable
+                ? (e) => {
+                    e.stopPropagation()
+                    deleteNote(i)
+                  }
+                : undefined
+            }
           >
-            <title>{`${noteName(n.pitch)} · drag to move, drag the right edge to resize, double-click to delete`}</title>
+            <title>
+              {editable
+                ? `${noteName(n.pitch)} · drag to move, drag the right edge to resize, double-click to delete`
+                : noteName(n.pitch)}
+            </title>
           </rect>
           )
         })}

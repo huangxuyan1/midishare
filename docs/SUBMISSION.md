@@ -10,7 +10,7 @@
 
 midishare is a site for sharing short musical clips as ABC notation. ABC is the single format: it is what the database stores, what the AI writes, and what you copy to the clipboard.
 
-- Browse and search published clips without signing in. Each clip page shows sheet music, plays in the browser, downloads as a `.mid` file and copies as ABC text.
+- Browse and search published clips without signing in. Each clip page shows a piano roll and sheet music, plays in the browser with a moving playhead, downloads as a `.mid` file and copies as ABC text.
 - Signed-in users create clips in an editor where the ABC text, a piano roll, the title/tempo/meter/key fields and the sheet music all show the same clip. Editing any of them updates the others.
 - A transport above the piano roll plays the clip with a moving playhead.
 - An AI assistant turns a prompt into ABC, or writes a variation of the current clip. The server only returns ABC that parses.

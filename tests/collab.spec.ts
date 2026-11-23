@@ -182,3 +182,37 @@ test("another user cannot see A's draft, or edit or delete A's clips", async ({ 
     }
   }
 })
+
+test('the clip page shows a read-only piano roll with a transport', async ({ users }) => {
+  const [a] = await users(1)
+  await a.page.goto('/home')
+  await expect(a.page.getByTestId('nav-user-name')).toHaveText(/\S/, { timeout: 15_000 })
+
+  const recordId = `test-roll-${Date.now()}`
+  try {
+    const created = await callTool(a, 'records_create', {
+      collection: 'clips',
+      recordId,
+      data: { title: `__test-${Date.now()}__ roll`, abc: EXAMPLE_ABC, status: 'published' },
+    })
+    expect(created.ok, created.error).toBe(true)
+
+    await a.page.goto(`/clips/${recordId}`)
+    const roll = a.page.getByTestId('piano-roll')
+    await expect(roll).toBeVisible({ timeout: 15_000 })
+    await expect(a.page.getByTestId('transport')).toBeVisible()
+    await expect(a.page.getByTestId('abc-notation').locator('svg')).toBeVisible()
+
+    // EXAMPLE_ABC is "C D E F": four notes.
+    const notes = a.page.getByTestId('roll-note')
+    await expect(notes).toHaveCount(4)
+
+    // Read-only, even for the owner: double-clicking does not add or delete.
+    await roll.dblclick({ position: { x: 200, y: 20 } })
+    await notes.first().dblclick()
+    await expect(notes).toHaveCount(4)
+    expect((await readClip(a, recordId)).abc).toBe(EXAMPLE_ABC)
+  } finally {
+    await callTool(a, 'records_delete', { collection: 'clips', recordId }).catch(() => {})
+  }
+})

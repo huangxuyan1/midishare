@@ -1,5 +1,6 @@
 /**
- * /clips/:id - one clip: notation, play/stop, Download .mid, Copy ABC.
+ * /clips/:id - one clip: a read-only piano roll with play/stop, the sheet
+ * music, Download .mid, Copy ABC.
  * Public: signed-out visitors can open published clips. The owner also gets
  * Edit, Publish/Unpublish and Delete. The server enforces who may do those
  * (update/delete: 'own'); hiding the buttons for others is only UX.
@@ -9,7 +10,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth, useMutations } from 'deepspace'
 import { Copy, Download, Sparkles } from 'lucide-react'
 import { Badge, Button, ConfirmModal, useToast } from '@/components/ui'
-import { AbcView } from '@/components/AbcView'
+import { ClipPlayer } from '@/components/ClipPlayer'
 import { downloadMidi, parseTags } from '@/lib/abc'
 import { useClip } from '@/lib/clips'
 import type { Clip } from '@/schemas/clips-schema'
@@ -85,7 +86,7 @@ export default function ClipPage() {
         )}
       </div>
 
-      <AbcView abc={abc} />
+      <ClipPlayer abc={abc} />
 
       <div className="flex flex-wrap gap-3">
         <Button variant="outline" onClick={() => downloadMidi(abc, title)}>

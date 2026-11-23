@@ -21,9 +21,9 @@ ABC is the one format everywhere: it is what's stored, what the AI writes, and w
 | Data | One `clips` collection: title, description, tags, abc, status (`draft`/`published`), source (`pasted`/`ai`). The server caps every field's length. | `src/schemas/clips-schema.ts` |
 | Permissions | Anyone, signed in or not, reads published clips. Signed-in users create clips and update or delete their own. A draft is visible only to its owner. The app owner can delete any clip. | same file |
 | Browse | `/home`: my clips, and published clips newest first, with search by title or tag. | `src/pages/(app)/home.tsx` |
-| Clip page | `/clips/:id`: sheet music, Play/Stop, Download .mid, Copy ABC, Make a variation, and the owner's actions. | `src/pages/(app)/clips/[id].tsx`, `src/components/AbcView.tsx` |
+| Clip page | `/clips/:id`: a read-only piano roll with the same transport as the editor, sheet music, Download .mid, Copy ABC, Make a variation, and the owner's actions. | `src/pages/(app)/clips/[id].tsx`, `src/components/ClipPlayer.tsx`, `AbcView.tsx` |
 | Editor | `/new` and `/edit/:id`. The ABC text is the single source of truth. The piano roll, the title/tempo/meter/key fields and the sheet music are views of it that write back to it. | `src/components/ClipForm.tsx`, `MetadataFields.tsx` |
-| Piano roll | SVG, 16th-note grid, C2–B6. Double-click adds a note, drag moves it, drag the right edge to resize, double-click a note to delete it. | `src/components/PianoRoll.tsx` |
+| Piano roll | SVG, 16th-note grid, C2–B6. Double-click adds a note, drag moves it, drag the right edge to resize, double-click a note to delete it. Read-only on the clip page. | `src/components/PianoRoll.tsx` |
 | Transport | Play, Stop, Reset, a bar.beat counter and a moving playhead. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
 | ABC ↔ notes | ABC → notes uses abcjs's own audio data, so the roll shows what you hear. Notes → ABC writes chords, ties and extra voices. | `src/lib/abc-notes.ts`, `src/lib/abc-headers.ts` |
 | AI assistant | `POST /api/abc/generate`: sign-in required, capped prompt, one model call through DeepSpace's AI proxy. The reply must parse as ABC; if it doesn't, the model gets one retry with the parser's errors. | `src/server/abc-routes.ts`, `src/components/AiAssist.tsx` |
@@ -66,7 +66,7 @@ Checks:
 npx tsc --noEmit
 npx eslint src
 npx vitest run             # 28 unit tests: schema permissions, ABC validation, ABC <-> notes
-npm run test:e2e           # Playwright; the two-user ownership test needs two DeepSpace test accounts
+npm run test:e2e           # 11 Playwright tests; the signed-in ones need two DeepSpace test accounts
 ```
 
 The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's direct server calls to read A's draft, or to edit, unpublish or delete A's clips, come back `READ DENIED`, `UPDATE DENIED` and `DELETE DENIED`.

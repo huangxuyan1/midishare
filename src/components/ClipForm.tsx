@@ -148,7 +148,7 @@ export function ClipForm({ initial, ready, onSave }: Props) {
         <div className="flex flex-col gap-1.5">
           <Label>Sheet music</Label>
           {check.ok ? (
-            <AbcView abc={values.abc} showPlay={false} />
+            <AbcView abc={values.abc} />
           ) : (
             <ul className="flex flex-col gap-1 text-sm text-destructive" data-testid="abc-error">
               {check.errors.map((e, i) => (
