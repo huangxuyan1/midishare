@@ -11,7 +11,7 @@
 midishare is a site for sharing short musical clips as ABC notation. ABC is the single format: it is what the database stores, what the AI writes, and what you copy to the clipboard.
 
 - Browse and search published clips without signing in. Each clip page shows a piano roll and sheet music, plays in the browser with a moving playhead, downloads as a `.mid` file and copies as ABC text.
-- Signed-in users create clips in an editor where the ABC text, a piano roll, the title/tempo/meter/key fields and the sheet music all show the same clip. Editing any of them updates the others.
+- Signed-in users create clips in an editor where the ABC text, a piano roll, the title/tempo/meter/key fields and the sheet music all show the same clip. Editing any of them updates the others. Undo and redo cover every change.
 - A transport above the piano roll plays the clip with a moving playhead.
 - An AI assistant turns a prompt into ABC, or writes a variation of the current clip. The server only returns ABC that parses.
 - Clips are drafts until published. Only the owner can edit, unpublish or delete a clip.
@@ -55,6 +55,7 @@ A coding agent (Claude Code) wrote most of the code. I made the product and arch
   - The first AI call failed with "Payment Required" with a full credit balance. An unset output limit reserves credits for 64k tokens; the limit is now 2000.
   - Adding one note in the roll turned 48 notes into 60. abcjs does not follow a tie inside a chord the way the writer assumed, so the writer now puts overlapping notes into separate voices.
   - Dragging a note did nothing, because the drag state lived in React state and the pointer events arrived before the re-render. It now lives in a ref.
+  - Double-clicking a note did not delete it with a real mouse. The drag captured the pointer on the whole SVG, and the browser sends the double-click to the capturing element. Earlier checks had dispatched the event straight at the note; a Playwright test with real mouse input found it.
 
 ## How ownership was verified
 
