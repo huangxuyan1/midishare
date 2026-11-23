@@ -9,11 +9,11 @@ For the next agent session. Read this first, then [CLAUDE.md](../CLAUDE.md) (wor
 The app is finished and submittable. What is left is Xuyan's own checking and the submission note.
 
 - **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
-  - Latest release: `rel_01M856WAZ005S3KX5CPDVXPC75`, commit `d03325e`, `dirty: false`. Every commit after it changes only docs.
+  - Latest release: `rel_01M85BGFBC5WSB5PX0JPTDKX7E`, commit `6db5fd7` (session 4), `dirty: false`. Every commit after it changes only docs.
 - **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`. Everything is committed and pushed.
   - The DeepSpace source is GitHub. **Never run `deepspace push`.**
 - **Data:** 5 published example clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan. Xuyan had not listened to them when they were published.
-- **Tests:** 38 unit tests and 14 Playwright tests pass. Type-check and lint are clean.
+- **Tests:** 41 unit tests and 15 Playwright tests pass. Type-check and lint are clean.
   - `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`
   - `npx deepspace test run all --port 5187` (port 5173 belongs to another dev server; don't kill it)
 - **Test accounts:** "Test A" and "Test B" exist. The Playwright fixture signs them in from the CLI's saved credentials.
@@ -25,11 +25,12 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 2. **Xuyan, the submission note.** Edit [SUBMISSION.md](SUBMISSION.md) and resolve its two TODO lines (the by-ear check, and any code Xuyan changed by hand). Then submit in the portal: live URL, repository, note.
 3. **After any code change:** run the checks, commit, deploy, and confirm `dirty: false`. Verify the changed path on the live URL. Add rows to BUILD_LOG.md.
 4. **Done in session 3: the Studio UI.** Xuyan looked at it and approved it ("really, really cool"). Changes to colours, fonts or layout go through `src/themes.css` (the `studio` block), `src/styles.css` (app tokens) and the page files in the table below.
-5. **Optional polish**, only if Xuyan asks:
+5. **Open, waiting for Xuyan's decision (found in session 4):** abcjs lines voices up by text line. ABC whose voices have different numbers of music lines (the MIDI Clipboard bridge writes this when one voice is mostly rests) is accepted but plays and draws out of step. Details are in the last `issue` row of BUILD_LOG.md.
+6. **Optional polish**, only if Xuyan asks:
    - `/new` starts with an empty title while the example ABC has `T:Example`
    - in keys without flats (C, Am…), B♭ is spelled `^A`
    - click the bar numbers to seek
-6. **Set aside, separate tasks:**
+7. **Set aside, separate tasks:**
    - **Modular as the audio engine, with a soundfont supernode.** Planned only; see [MODULAR_AUDIO_ENGINE.md](MODULAR_AUDIO_ENGINE.md). The Modular part belongs in a session opened in the Modular folder.
    - **Switching the Ableton bridge to ABC** (`C:\Users\alvin\Documents\Projects\midi-clipboard`). See HANDOFF.md §5.
 
