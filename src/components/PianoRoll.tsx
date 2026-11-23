@@ -23,9 +23,12 @@ const BLACK_KEYS = [1, 3, 6, 8, 10]
 type Drag = {
   index: number
   mode: 'move' | 'resize'
+  /** Where the pointer went down. */
   x: number
   y: number
   original: Note
+  /** The note as it is now, while dragging. */
+  changed: Note
 }
 
 type Props = {
@@ -38,11 +41,13 @@ type Props = {
 export function PianoRoll({ notes, barSteps, onChange }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [drag, setDrag] = useState<Drag | null>(null)
-  const [draft, setDraft] = useState<Note[] | null>(null) // notes while dragging
+  // The drag lives in a ref, not state: pointer events can arrive faster than
+  // React re-renders, and each handler must see the latest drag right away.
+  const drag = useRef<Drag | null>(null)
+  const [dragged, setDragged] = useState<{ index: number; note: Note } | null>(null) // what to draw
   const [newLength, setNewLength] = useState(2) // new notes copy the last length you used
 
-  const shown = draft ?? notes
+  const shown = dragged ? notes.map((n, i) => (i === dragged.index ? dragged.note : n)) : notes
   const lastEnd = Math.max(0, ...shown.map((n) => n.start + n.length))
   const bars = Math.max(4, Math.ceil(lastEnd / barSteps) + 1) // always one empty bar to grow into
   const steps = bars * barSteps
@@ -82,35 +87,44 @@ export function PianoRoll({ notes, barSteps, onChange }: Props) {
     const { x, y } = pointInGrid(e)
     const noteRight = (note.start + note.length) * STEP_W
     svgRef.current!.setPointerCapture(e.pointerId)
-    setDrag({ index, mode: noteRight - x <= EDGE ? 'resize' : 'move', x, y, original: note })
-    setDraft(notes)
+    const mode = noteRight - x <= EDGE ? 'resize' : 'move'
+    drag.current = { index, mode, x, y, original: note, changed: note }
+    setDragged({ index, note })
   }
 
   function moveDrag(e: PointerEvent) {
-    if (!drag) return
+    const d = drag.current
+    if (!d) return
     const { x, y } = pointInGrid(e)
-    const dSteps = Math.round((x - drag.x) / STEP_W)
-    const dRows = Math.round((y - drag.y) / ROW_H)
-    const o = drag.original
-    const changed: Note =
-      drag.mode === 'move'
+    const dSteps = Math.round((x - d.x) / STEP_W)
+    const dRows = Math.round((y - d.y) / ROW_H)
+    const o = d.original
+    d.changed =
+      d.mode === 'move'
         ? {
             ...o,
             start: Math.max(0, o.start + dSteps),
             pitch: clamp(o.pitch - dRows, LOWEST, HIGHEST), // screen y grows downward
           }
         : { ...o, length: Math.max(1, o.length + dSteps) }
-    setDraft(notes.map((n, i) => (i === drag.index ? changed : n)))
+    setDragged({ index: d.index, note: d.changed })
   }
 
-  function endDrag() {
-    if (drag && draft) {
-      const changed = draft[drag.index]
-      if (drag.mode === 'resize') setNewLength(changed.length)
-      if (JSON.stringify(changed) !== JSON.stringify(drag.original)) onChange(sortNotes(draft))
+  function endDrag(e: PointerEvent) {
+    moveDrag(e) // count the final position even if no move event came before it
+    const d = drag.current
+    if (d) {
+      if (d.mode === 'resize') setNewLength(d.changed.length)
+      if (JSON.stringify(d.changed) !== JSON.stringify(d.original)) {
+        onChange(sortNotes(notes.map((n, i) => (i === d.index ? d.changed : n))))
+      }
     }
-    setDrag(null)
-    setDraft(null)
+    cancelDrag()
+  }
+
+  function cancelDrag() {
+    drag.current = null
+    setDragged(null)
   }
 
   return (
@@ -121,7 +135,7 @@ export function PianoRoll({ notes, barSteps, onChange }: Props) {
         height={height}
         onPointerMove={moveDrag}
         onPointerUp={endDrag}
-        onPointerCancel={endDrag}
+        onPointerCancel={cancelDrag}
         className="select-none"
       >
         {/* Rows: one per pitch, black keys darker. */}
@@ -168,7 +182,7 @@ export function PianoRoll({ notes, barSteps, onChange }: Props) {
             width={n.length * STEP_W - 2}
             height={ROW_H - 2}
             rx={2}
-            className={drag?.index === i ? 'fill-primary/70' : 'fill-primary'}
+            className={dragged?.index === i ? 'fill-primary/70' : 'fill-primary'}
             style={{ cursor: 'grab' }}
             onPointerDown={(e) => startDrag(e, i)}
             onDoubleClick={(e) => {
