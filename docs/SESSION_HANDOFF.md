@@ -7,12 +7,13 @@ Written at the end of session 1 and updated during session 2 (same day) for the 
 ## 1. Where things stand
 
 - **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
-  - Latest release: `rel_01M83V6W02HFKEWVWT6AVDP4HJ`, commit `31b643f`, `dirty: false`. Commits after it change only docs.
+  - Latest release: `rel_01M83VJ64XZBV2965VXJRB4X47`, commit `139f26f`, `dirty: false`. Commits after it change only docs.
 - **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`, everything pushed.
   - The DeepSpace source is GitHub, claimed on the first deploy. **Never run `deepspace push`.**
-- **Data:** the server holds 0 clips. All test clips were deleted. **A reviewer opening /home sees an empty list**; Xuyan should publish a few real clips before submitting.
+- **Data:** the server holds 5 draft clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan. **Published is still empty**: Xuyan listens to them, then publishes the ones worth keeping (or deletes them) before submitting.
 - **Tests:** 28 unit tests and 10 Playwright tests pass (`npx deepspace test run all --port 5187`). Type-check and lint are clean.
   - Commands: `npx tsc --noEmit`, `npx eslint src`, `npx vitest run`.
+- **Skills:** the DeepSpace skill and the 39 Matt Pocock skills (`npx skills@1.9.0 add mattpocock/skills`) are installed in `.claude/skills/`; `skills-lock.json` lists them.
 - **Uncommitted: nothing** (settled in session 2). `skills-lock.json` is committed; the installed skill copies (`.agents/`, `.claude/skills/`) are gitignored. The process docs (this file, HANDOFF.md, BUILD_LOG.md, SUBMISSION.md) moved into `docs/`.
 
 ## 2. What the app does
