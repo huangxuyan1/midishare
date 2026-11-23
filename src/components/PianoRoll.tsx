@@ -107,7 +107,10 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Prop
     const note = notes[index]
     const { x, y } = pointInGrid(e)
     const noteRight = (note.start + note.length) * STEP_W
-    svgRef.current!.setPointerCapture(e.pointerId)
+    // Capture on the note, so the drag keeps getting events when the pointer
+    // leaves it. Not on the SVG: the browser sends click and double-click to
+    // the capturing element, and the note's double-click (delete) would never fire.
+    e.currentTarget.setPointerCapture(e.pointerId)
     const mode = noteRight - x <= EDGE ? 'resize' : 'move'
     drag.current = { index, mode, x, y, original: note, changed: note }
     setDragged({ index, note })
