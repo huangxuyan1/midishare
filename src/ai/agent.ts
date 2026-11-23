@@ -1,17 +1,18 @@
 /**
- * One coordinator for the generated app's two assistant surfaces:
+ * Mounts the app's record tools (src/ai/tools.ts) as HTTP routes under
+ * /_deepspace/agent. `npx deepspace agent invoke midishare <tool>` and the
+ * two-user test in tests/collab.spec.ts call them to check what the server
+ * stores and refuses. Every call runs as the verified caller, so the clips
+ * permissions apply.
  *
- * - the in-app assistant is the website AI chat UI;
- * - the local assistant is the user's Codex, Claude, or similar client.
- *
- * The CLI only bridges a local assistant to these Worker routes. It does not
- * authorize or host either assistant.
+ * The scaffold also had a website AI chat here. This app doesn't use it (the
+ * AI assistant is the one-shot route in src/server/abc-routes.ts), so it was
+ * removed.
  */
 
 import type { Hono } from 'hono'
 import { registerAgentToolRoutes, resolveAppMembership } from 'deepspace/worker'
 import type { AgentToolAccessResult, AgentToolRouteOptions, JwtClaims } from 'deepspace/worker'
-import { registerAiChatRoutes } from './chat-routes.js'
 import { resolveAgentAuth, resolveAuth } from '../server/http-routes.js'
 import type { AppContext, Env } from '../../worker.js'
 
@@ -34,10 +35,6 @@ export interface AgentAuthorizationContext {
 export interface RegisterAgentOptions {
   /** The existing app-owned tool factory from src/ai/tools.ts. */
   tools: ToolFactory
-  /** Enable the website AI chat UI. Defaults to true. */
-  inApp?: boolean
-  /** Enable the user's local Codex/Claude/etc. assistant. Defaults to true. */
-  local?: boolean
   /**
    * Optional app-specific gate for subscriptions, teams, roles, or app data.
    * It only narrows access after verified identity and app membership succeed.
@@ -86,18 +83,13 @@ function createAccessResolver(options: RegisterAgentOptions, resolveIdentity: ty
 }
 
 /**
- * Register generated app assistant routes with one authorization policy for
- * both the website AI and the local assistant. The CLI is only their bridge.
+ * Register the tool routes. A CLI caller presents an agent token; a browser
+ * caller presents the normal sign-in JWT. Both go through the same checks.
  */
 export function registerAgent(app: Hono<AppContext>, options: RegisterAgentOptions): void {
-  if (options.inApp !== false) {
-    registerAiChatRoutes(app, createAccessResolver(options, resolveAuth), options.tools)
-  }
-  if (options.local !== false) {
-    registerAgentToolRoutes(app, {
-      buildTools: options.tools,
-      resolveAccess: createAccessResolver(options, resolveAgentAuth),
-      resolveBrowserAccess: createAccessResolver(options, resolveAuth),
-    })
-  }
+  registerAgentToolRoutes(app, {
+    buildTools: options.tools,
+    resolveAccess: createAccessResolver(options, resolveAgentAuth),
+    resolveBrowserAccess: createAccessResolver(options, resolveAuth),
+  })
 }
