@@ -78,6 +78,7 @@ The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's 
 - **One track.** The roll has a single lane of notes, C2–B6.
 - **A key change re-spells the notes; it does not transpose.** In keys without flats, B♭ is written as `^A`.
 - **Browse and search run in the browser** over every clip the server lets the caller read. That is fine for a small site and would need server-side filtering and paging for a large one.
+- **The sound is abcjs's built-in synth.** It downloads piano samples from a third-party host when you press Play. Replacing it with my own audio engine is planned: see [docs/MODULAR_AUDIO_ENGINE.md](docs/MODULAR_AUDIO_ENGINE.md).
 - **The AI assistant writes at most 16 bars** and spends the signed-in user's DeepSpace credits.
 - **The Ableton bridge** ([midi-clipboard](https://github.com/huangxuyan1/midi-clipboard), a separate project) still uses its own note format, not ABC. Copy and paste of ABC text works on the site without it.
 
@@ -89,5 +90,6 @@ A coding agent (Claude Code) wrote most of the code under direction. The record 
 - [HANDOFF.md](docs/HANDOFF.md): the brief the agent started from.
 - [SESSION_HANDOFF.md](docs/SESSION_HANDOFF.md): the state and to-do list passed between agent sessions.
 - [SUBMISSION.md](docs/SUBMISSION.md): the submission note.
+- [MODULAR_AUDIO_ENGINE.md](docs/MODULAR_AUDIO_ENGINE.md): a planned change of audio engine, not built.
 
 [CLAUDE.md](CLAUDE.md) holds the working rules the agent follows, and [AGENTS.md](AGENTS.md) is the DeepSpace scaffold's own agent guide.
