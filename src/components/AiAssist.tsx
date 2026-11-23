@@ -47,6 +47,7 @@ export function AiAssist({ currentAbc, onResult }: Props) {
       <div className="flex gap-2">
         <Input
           id="ai-prompt"
+          data-native-undo // the editor's Ctrl+Z leaves this box alone (see ClipForm)
           value={prompt}
           maxLength={MAX_PROMPT_LENGTH}
           onChange={(e) => setPrompt(e.target.value)}

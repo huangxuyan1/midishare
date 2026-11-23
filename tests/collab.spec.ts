@@ -183,6 +183,60 @@ test("another user cannot see A's draft, or edit or delete A's clips", async ({ 
   }
 })
 
+test('the editor undoes and redoes changes', async ({ users }) => {
+  const [a] = await users(1)
+  await a.page.goto('/new')
+  const notes = a.page.getByTestId('roll-note')
+  await expect(notes.first()).toBeVisible({ timeout: 15_000 })
+  const undo = a.page.getByTestId('undo')
+  const redo = a.page.getByTestId('redo')
+  const title = a.page.getByLabel('Title')
+
+  // Nothing has changed yet.
+  const before = await notes.count()
+  await expect(undo).toBeDisabled()
+  await expect(redo).toBeDisabled()
+
+  // Delete a note in the roll, then undo and redo it with the buttons.
+  await notes.first().dblclick()
+  await expect(notes).toHaveCount(before - 1)
+  await undo.click()
+  await expect(notes).toHaveCount(before)
+  await expect(undo).toBeDisabled()
+  await redo.click()
+  await expect(notes).toHaveCount(before - 1)
+
+  // The keyboard does the same, from inside a text field too.
+  await title.click()
+  await a.page.keyboard.press('Control+z')
+  await expect(notes).toHaveCount(before)
+  await a.page.keyboard.press('Control+y')
+  await expect(notes).toHaveCount(before - 1)
+
+  // Drag a note up two rows (12 px each) with the mouse: the ABC changes, and one undo puts it back.
+  const abc = a.page.getByLabel('ABC notation')
+  const abcBeforeDrag = await abc.inputValue()
+  const box = (await notes.first().boundingBox())!
+  await a.page.mouse.move(box.x + 4, box.y + box.height / 2)
+  await a.page.mouse.down()
+  await a.page.mouse.move(box.x + 4, box.y + box.height / 2 - 24, { steps: 4 })
+  await a.page.mouse.up()
+  await expect(abc).not.toHaveValue(abcBeforeDrag)
+  await a.page.keyboard.press('Control+z')
+  await expect(abc).toHaveValue(abcBeforeDrag)
+
+  // A burst of typing is one step, and the ABC's T: line follows the title.
+  const titleBefore = await title.inputValue()
+  await title.press('End')
+  await title.pressSequentially(' v2')
+  await expect(title).toHaveValue(`${titleBefore} v2`)
+  await expect(abc).toHaveValue(new RegExp(`T:${titleBefore} v2`))
+  await a.page.keyboard.press('Control+z')
+  await expect(title).toHaveValue(titleBefore)
+  await a.page.keyboard.press('Control+Shift+z')
+  await expect(title).toHaveValue(`${titleBefore} v2`)
+})
+
 test('the clip page shows a read-only piano roll with a transport', async ({ users }) => {
   const [a] = await users(1)
   await a.page.goto('/home')

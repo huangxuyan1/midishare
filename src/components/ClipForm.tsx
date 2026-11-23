@@ -9,8 +9,12 @@
  * - the sheet music preview renders the ABC
  * - the transport above the roll plays it, with a playhead on the roll
  * Saving is disabled until the ABC parses.
+ *
+ * Undo/redo: the form's values live in a history (see lib/history.ts), and
+ * every change goes through change(), so any change can be undone.
  */
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Redo2, Undo2 } from 'lucide-react'
 import { Button, Input, Label, Textarea } from '@/components/ui'
 import { AbcView } from './AbcView'
 import { AiAssist } from './AiAssist'
@@ -21,7 +25,11 @@ import { usePlayback } from '@/lib/use-playback'
 import { checkAbc } from '@/lib/abc'
 import { readHeaders, setHeader } from '@/lib/abc-headers'
 import { abcToNotes, barLengthInSteps, writeNotesIntoAbc, type Note } from '@/lib/abc-notes'
+import { pushStep, redo, replacePresent, startHistory, undo } from '@/lib/history'
 import { CLIP_LIMITS, type ClipSource, type ClipStatus } from '@/schemas/clips-schema'
+
+/** Keystrokes closer together than this count as one undo step. */
+const TYPING_PAUSE_MS = 1000
 
 export type ClipFormValues = {
   title: string
@@ -41,7 +49,9 @@ type Props = {
 }
 
 export function ClipForm({ initial, ready, onSave }: Props) {
-  const [values, setValues] = useState(initial)
+  const [history, setHistory] = useState(() => startHistory(initial))
+  const values = history.present
+  const lastTypedAt = useRef(0) // time of the last keystroke; 0 when the last change wasn't typing
   const [saving, setSaving] = useState(false)
   const check = checkAbc(values.abc)
   const canSave = ready && !saving && check.ok && values.title.trim() !== ''
@@ -56,17 +66,60 @@ export function ClipForm({ initial, ready, onSave }: Props) {
     return lastGoodNotes.current
   }, [values.abc, check.ok])
 
+  /**
+   * Every change to the form goes through here.
+   * A roll edit, a dropdown or an AI result is one undo step. Typing is one
+   * step per burst: the first keystroke adds a step, and keystrokes that
+   * follow within a second only replace the present value.
+   */
+  function change(update: (v: ClipFormValues) => ClipFormValues, typing = false) {
+    const now = Date.now()
+    const sameBurst = typing && now - lastTypedAt.current < TYPING_PAUSE_MS
+    lastTypedAt.current = typing ? now : 0
+    setHistory((h) => (sameBurst ? replacePresent(h, update(h.present)) : pushStep(h, update(h.present))))
+  }
+
+  function undoStep() {
+    lastTypedAt.current = 0 // typing after an undo starts a new step
+    setHistory(undo)
+  }
+
+  function redoStep() {
+    lastTypedAt.current = 0
+    setHistory(redo)
+  }
+
+  // Ctrl+Z undoes; Ctrl+Y or Ctrl+Shift+Z redoes (Cmd on a Mac).
+  // The listener is added once. That is safe because undoStep and redoStep
+  // only use a ref and a state setter, which never change.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return
+      // The AI prompt is not part of the clip, so it keeps the browser's own undo.
+      if (e.target instanceof HTMLElement && e.target.closest('[data-native-undo]')) return
+      const key = e.key.toLowerCase()
+      const isUndo = key === 'z' && !e.shiftKey
+      const isRedo = key === 'y' || (key === 'z' && e.shiftKey)
+      if (!isUndo && !isRedo) return
+      e.preventDefault() // otherwise a text field also runs its own undo
+      if (isUndo) undoStep()
+      else redoStep()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
   function setField(field: 'description' | 'tags', value: string) {
-    setValues((v) => ({ ...v, [field]: value }))
+    change((v) => ({ ...v, [field]: value }), true)
   }
 
   /** Every ABC change goes through here; the title follows the T: line. */
-  function setAbc(abc: string) {
-    setValues((v) => ({ ...v, abc, title: readHeaders(abc).title || v.title }))
+  function setAbc(abc: string, typing = false) {
+    change((v) => withAbc(v, abc), typing)
   }
 
   function setTitle(title: string) {
-    setValues((v) => ({ ...v, title, abc: setHeader(v.abc, 'T', title) }))
+    change((v) => ({ ...v, title, abc: setHeader(v.abc, 'T', title) }), true)
   }
 
   async function save(status: ClipStatus) {
@@ -80,7 +133,7 @@ export function ClipForm({ initial, ready, onSave }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      <AiAssist currentAbc={values.abc} onResult={(abc) => { setAbc(abc); setValues((v) => ({ ...v, source: 'ai' })) }} />
+      <AiAssist currentAbc={values.abc} onResult={(abc) => change((v) => ({ ...withAbc(v, abc), source: 'ai' }))} />
 
       <div className="flex flex-wrap items-end gap-4">
         <div className="flex min-w-64 flex-1 flex-col gap-1.5">
@@ -95,7 +148,7 @@ export function ClipForm({ initial, ready, onSave }: Props) {
         </div>
         <MetadataFields
           headers={headers}
-          onTempo={(bpm) => setAbc(setHeader(values.abc, 'Q', `1/4=${bpm}`))}
+          onTempo={(bpm) => setAbc(setHeader(values.abc, 'Q', `1/4=${bpm}`), true)}
           // Meter and key: rewrite the music from the current notes, so the
           // bar lines move and the same pitches get re-spelled for the new key.
           onMeter={(meter) => setAbc(writeNotesIntoAbc(setHeader(values.abc, 'M', meter), notes))}
@@ -106,14 +159,36 @@ export function ClipForm({ initial, ready, onSave }: Props) {
       <div className="flex flex-col gap-1.5">
         <div className="flex items-end justify-between gap-4">
           <Label>Piano roll</Label>
-          <Transport
-            status={playback.status}
-            position={playback.position}
-            barSteps={barSteps}
-            onPlay={playback.play}
-            onStop={playback.stop}
-            onReset={playback.reset}
-          />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={undoStep}
+              disabled={history.past.length === 0}
+              title="Undo (Ctrl+Z)"
+              data-testid="undo"
+            >
+              <Undo2 className="size-4" /> Undo
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={redoStep}
+              disabled={history.future.length === 0}
+              title="Redo (Ctrl+Y)"
+              data-testid="redo"
+            >
+              <Redo2 className="size-4" /> Redo
+            </Button>
+            <Transport
+              status={playback.status}
+              position={playback.position}
+              barSteps={barSteps}
+              onPlay={playback.play}
+              onStop={playback.stop}
+              onReset={playback.reset}
+            />
+          </div>
         </div>
         <PianoRoll
           notes={notes}
@@ -125,6 +200,7 @@ export function ClipForm({ initial, ready, onSave }: Props) {
         <p className="text-xs text-muted-foreground">
           Double-click to add a note, drag to move it, drag its right edge to resize, double-click a note to delete it.
           Editing here rewrites the music lines of the ABC, so chord symbols become written-out notes.
+          Ctrl+Z undoes any change to the clip; Ctrl+Y redoes it.
         </p>
       </div>
 
@@ -135,7 +211,7 @@ export function ClipForm({ initial, ready, onSave }: Props) {
             id="abc"
             value={values.abc}
             maxLength={CLIP_LIMITS.abc}
-            onChange={(e) => setAbc(e.target.value)}
+            onChange={(e) => setAbc(e.target.value, true)}
             rows={10}
             spellCheck={false}
             className="font-mono text-sm"
@@ -193,4 +269,9 @@ export function ClipForm({ initial, ready, onSave }: Props) {
       </div>
     </div>
   )
+}
+
+/** The values with new ABC. The title follows the T: line when there is one. */
+function withAbc(values: ClipFormValues, abc: string): ClipFormValues {
+  return { ...values, abc, title: readHeaders(abc).title || values.title }
 }
