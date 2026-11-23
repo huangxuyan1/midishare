@@ -7,11 +7,11 @@ Written at the end of session 1 and updated during session 2 (same day) for the 
 ## 1. Where things stand
 
 - **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
-  - Latest release: `rel_01M83TMXS38ZG9ZGP8B26WNTX8`, commit `74a8d96` (dirty only because of the uncommitted files below).
-- **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`, pushed up to the build-log commit after `74a8d96`.
+  - Latest release: `rel_01M83V6W02HFKEWVWT6AVDP4HJ`, commit `31b643f`, `dirty: false`. Commits after it change only docs.
+- **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`, everything pushed.
   - The DeepSpace source is GitHub, claimed on the first deploy. **Never run `deepspace push`.**
 - **Data:** the server holds 0 clips. All test clips were deleted. **A reviewer opening /home sees an empty list**; Xuyan should publish a few real clips before submitting.
-- **Tests:** 28 unit tests pass. Type-check and lint are clean.
+- **Tests:** 28 unit tests and 10 Playwright tests pass (`npx deepspace test run all --port 5187`). Type-check and lint are clean.
   - Commands: `npx tsc --noEmit`, `npx eslint src`, `npx vitest run`.
 - **Uncommitted: nothing** (settled in session 2). `skills-lock.json` is committed; the installed skill copies (`.agents/`, `.claude/skills/`) are gitignored. The process docs (this file, HANDOFF.md, BUILD_LOG.md, SUBMISSION.md) moved into `docs/`.
 
