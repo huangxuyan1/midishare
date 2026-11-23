@@ -138,16 +138,23 @@ export function PianoRoll({ notes, barSteps, onChange }: Props) {
         onPointerCancel={cancelDrag}
         className="select-none"
       >
-        {/* Rows: one per pitch, black keys darker. */}
+        {/* Rows: one per pitch. Black-key rows are darker in both light and dark mode. */}
         {Array.from({ length: rows }, (_, r) => {
           const pitch = HIGHEST - r
           const black = BLACK_KEYS.includes(pitch % 12)
           return (
             <g key={pitch}>
-              <rect x={0} y={r * ROW_H} width={width} height={ROW_H} className={black ? 'fill-muted' : 'fill-background'} />
-              <rect x={0} y={r * ROW_H} width={KEYS_W} height={ROW_H} className={black ? 'fill-foreground/70' : 'fill-card'} />
+              <rect x={0} y={r * ROW_H} width={width} height={ROW_H} className={black ? 'fill-black/25' : 'fill-transparent'} />
+              {/* The keyboard: real piano colors, not theme colors, so it never inverts. */}
+              <rect
+                x={0}
+                y={r * ROW_H}
+                width={KEYS_W}
+                height={ROW_H}
+                className={black ? 'fill-neutral-900' : 'fill-white stroke-neutral-300'}
+              />
               {pitch % 12 === 0 && (
-                <text x={4} y={r * ROW_H + ROW_H - 2} className="fill-muted-foreground text-[9px]">
+                <text x={4} y={r * ROW_H + ROW_H - 2} className="fill-neutral-500 text-[9px]">
                   C{pitch / 12 - 1}
                 </text>
               )}
