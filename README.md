@@ -24,7 +24,7 @@ ABC is the one format everywhere: it is what's stored, what the AI writes, and w
 | Clip page | `/clips/:id`: a read-only piano roll with the same transport as the editor, sheet music, Download .mid, Copy ABC, Make a variation, and the owner's actions. | `src/pages/(app)/clips/[id].tsx`, `src/components/ClipPlayer.tsx`, `AbcView.tsx` |
 | Editor | `/new` and `/edit/:id`. The ABC text is the single source of truth. The piano roll, the title/tempo/meter/key fields and the sheet music are views of it that write back to it. | `src/components/ClipForm.tsx`, `MetadataFields.tsx` |
 | Piano roll | SVG, 16th-note grid, C2–B6. Double-click adds a note, drag moves it, drag the right edge to resize, double-click a note to delete it. Read-only on the clip page. | `src/components/PianoRoll.tsx` |
-| Transport | Play, Stop, Reset, a bar.beat counter and a moving playhead. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
+| Transport | Play, Stop, Reset, a bar.beat counter and a moving playhead. The space bar toggles play/stop. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
 | ABC ↔ notes | ABC → notes uses abcjs's own audio data, so the roll shows what you hear. Notes → ABC writes chords, ties and extra voices. | `src/lib/abc-notes.ts`, `src/lib/abc-headers.ts` |
 | AI assistant | `POST /api/abc/generate`: sign-in required, capped prompt, one model call through DeepSpace's AI proxy. The reply must parse as ABC; if it doesn't, the model gets one retry with the parser's errors. | `src/server/abc-routes.ts`, `src/components/AiAssist.tsx` |
 | Validation | ABC is valid when it has a `K:` line, abcjs finds music, and abcjs reports no warnings. The editor and the AI route use the same check. | `src/lib/abc.ts` |

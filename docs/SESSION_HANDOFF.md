@@ -7,7 +7,7 @@ Written at the end of session 1 and updated during session 2 (same day) for the 
 ## 1. Where things stand
 
 - **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
-  - Latest release: `rel_01M83VTRRJ0WFVVEDM5BG27J2G`, commit `239e2ba`, `dirty: false`. Commits after it change only docs.
+  - Latest release: `rel_01M83W276QSMPQKC8J53M6JN4C`, commit `84e83db`, `dirty: false`. Commits after it change only docs.
 - **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`, everything pushed.
   - The DeepSpace source is GitHub, claimed on the first deploy. **Never run `deepspace push`.**
 - **Data:** the server holds 5 published clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan, published with Xuyan's go-ahead. Xuyan had not listened to them yet; unpublish or delete any that sound wrong.
@@ -57,7 +57,7 @@ Everything above was verified on the live URL; BUILD_LOG.md has each check.
    - `/new` starts with an empty title while the example ABC has `T:Example`
    - in keys without flats (C, Am…), B♭ is spelled `^A`
    - click the bar numbers to seek
-   - space bar for play/stop
+   - space bar for play/stop (done in session 2)
 8. **Separate workstream, not required:** switch the Ableton bridge (`C:\Users\alvin\Documents\Projects\midi-clipboard`) to ABC. See HANDOFF.md §5.
 
 ## 4. Decisions already made by Xuyan (don't reopen)
