@@ -6,14 +6,17 @@
 import { useState } from 'react'
 import { Button, Input, Label, Textarea } from '@/components/ui'
 import { AbcView } from './AbcView'
+import { AiAssist } from './AiAssist'
 import { checkAbc } from '@/lib/abc'
-import { CLIP_LIMITS, type ClipStatus } from '@/schemas/clips-schema'
+import { CLIP_LIMITS, type ClipSource, type ClipStatus } from '@/schemas/clips-schema'
 
 export type ClipFormValues = {
   title: string
   description: string
   tags: string
   abc: string
+  /** 'ai' once the AI assistant has written the ABC. */
+  source: ClipSource
 }
 
 type Props = {
@@ -30,7 +33,7 @@ export function ClipForm({ initial, ready, onSave }: Props) {
   const check = checkAbc(values.abc)
   const canSave = ready && !saving && check.ok && values.title.trim() !== ''
 
-  function set(field: keyof ClipFormValues, value: string) {
+  function set(field: 'title' | 'description' | 'tags' | 'abc', value: string) {
     setValues((v) => ({ ...v, [field]: value }))
   }
 
@@ -46,6 +49,11 @@ export function ClipForm({ initial, ready, onSave }: Props) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="flex flex-col gap-4">
+        <AiAssist
+          currentAbc={values.abc}
+          onResult={(abc) => setValues((v) => ({ ...v, abc, source: 'ai' }))}
+        />
+
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="title">Title</Label>
           <Input

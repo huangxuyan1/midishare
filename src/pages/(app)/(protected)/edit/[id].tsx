@@ -30,11 +30,11 @@ export default function EditClipPage() {
     }
   }
 
-  const { title, description, tags, abc } = clip.data
+  const { title, description, tags, abc, source } = clip.data
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-semibold">Edit clip</h1>
-      <ClipForm initial={{ title, description, tags, abc }} ready={ready} onSave={save} />
+      <ClipForm initial={{ title, description, tags, abc, source }} ready={ready} onSave={save} />
     </div>
   )
 }

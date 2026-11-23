@@ -7,7 +7,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth, useMutations } from 'deepspace'
-import { Copy, Download } from 'lucide-react'
+import { Copy, Download, Sparkles } from 'lucide-react'
 import { Badge, Button, ConfirmModal, useToast } from '@/components/ui'
 import { AbcView } from '@/components/AbcView'
 import { downloadMidi, parseTags } from '@/lib/abc'
@@ -17,7 +17,7 @@ import type { Clip } from '@/schemas/clips-schema'
 export default function ClipPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { userId } = useAuth()
+  const { userId, isSignedIn } = useAuth()
   const { success, error } = useToast()
   const { clip, status } = useClip(id)
   const { ready, putConfirmed, removeConfirmed } = useMutations<Clip>('clips')
@@ -94,6 +94,11 @@ export default function ClipPage() {
         <Button variant="outline" onClick={copyAbc}>
           <Copy className="size-4" /> Copy ABC
         </Button>
+        {isSignedIn && (
+          <Button variant="outline" onClick={() => navigate(`/new?from=${clip.recordId}`)}>
+            <Sparkles className="size-4" /> Make a variation
+          </Button>
+        )}
       </div>
 
       <details className="text-sm">
