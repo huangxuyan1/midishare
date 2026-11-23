@@ -7,11 +7,11 @@ Written at the end of session 1 and updated during session 2 (same day) for the 
 ## 1. Where things stand
 
 - **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
-  - Latest release: `rel_01M83VJ64XZBV2965VXJRB4X47`, commit `139f26f`, `dirty: false`. Commits after it change only docs.
+  - Latest release: `rel_01M83VTRRJ0WFVVEDM5BG27J2G`, commit `239e2ba`, `dirty: false`. Commits after it change only docs.
 - **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`, everything pushed.
   - The DeepSpace source is GitHub, claimed on the first deploy. **Never run `deepspace push`.**
-- **Data:** the server holds 5 draft clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan. **Published is still empty**: Xuyan listens to them, then publishes the ones worth keeping (or deletes them) before submitting.
-- **Tests:** 28 unit tests and 10 Playwright tests pass (`npx deepspace test run all --port 5187`). Type-check and lint are clean.
+- **Data:** the server holds 5 published clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan, published with Xuyan's go-ahead. Xuyan had not listened to them yet; unpublish or delete any that sound wrong.
+- **Tests:** 28 unit tests and 11 Playwright tests pass (`npx deepspace test run all --port 5187`). Type-check and lint are clean.
   - Commands: `npx tsc --noEmit`, `npx eslint src`, `npx vitest run`.
 - **Skills:** the DeepSpace skill and the 39 Matt Pocock skills (`npx skills@1.9.0 add mattpocock/skills`) are installed in `.claude/skills/`; `skills-lock.json` lists them.
 - **Uncommitted: nothing** (settled in session 2). `skills-lock.json` is committed; the installed skill copies (`.agents/`, `.claude/skills/`) are gitignored. The process docs (this file, HANDOFF.md, BUILD_LOG.md, SUBMISSION.md) moved into `docs/`.
@@ -23,7 +23,7 @@ Written at the end of session 1 and updated during session 2 (same day) for the 
 | Data | `clips` collection: title, description, tags (comma text), abc, status `draft`/`published`, source `pasted`/`ai`. Server-side maxLength (title 100, description 1000, tags 200, abc 5000). | `src/schemas/clips-schema.ts` (+ `.test.ts`) |
 | Permissions | Anyone, including signed-out viewers, reads `published` clips. Members create, and update/delete their own (`'own'`). Admins can delete any clip. Drafts are visible only to their owner (`visibilityField` on status). | same |
 | Browse | `/home`: My clips + Published, newest first, `?q=` (title/tag) and `?tag=` | `src/pages/(app)/home.tsx` |
-| Clip page | `/clips/:id`: sheet music, Play/Stop, Download .mid, Copy ABC, Show ABC, Make a variation. Owner: Edit, Publish/Unpublish, Delete (confirm dialog). | `src/pages/(app)/clips/[id].tsx`, `src/components/AbcView.tsx` |
+| Clip page | `/clips/:id`: read-only piano roll with the transport (session 2), sheet music, Download .mid, Copy ABC, Show ABC, Make a variation. Owner: Edit, Publish/Unpublish, Delete (confirm dialog). | `src/pages/(app)/clips/[id].tsx`, `src/components/ClipPlayer.tsx`, `AbcView.tsx` (sheet music only) |
 | Editor | `/new`, `/new?from=<id>` (variation), `/edit/:id`. The ABC text is the single source of truth. The piano roll, the title/tempo/meter/key fields and the sheet preview are views that write back to it. | `src/components/ClipForm.tsx`, `MetadataFields.tsx` |
 | Piano roll | SVG, 16th grid, C2–B6. Double-click adds a note; drag moves it; dragging the right edge resizes it; double-clicking a note deletes it. Keys keep piano colors in dark mode. | `src/components/PianoRoll.tsx` |
 | Transport | Play / Stop (keeps the playhead) / Reset (back to the start), bar.beat counter, amber playhead, sounding notes turn amber, follow-scroll. At the end the playhead returns to the start. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
@@ -35,7 +35,7 @@ Everything above was verified on the live URL; BUILD_LOG.md has each check.
 
 ## 3. To do, in priority order
 
-1. **Xuyan, by ear:** press Play in the editor and on a clip page. Confirm that sound comes out, that it lines up with the playhead, and that the clip page's button returns to Play when the clip ends.
+1. **Xuyan, by ear:** press Play in the editor and on a clip page (both use the same transport now). Confirm that sound comes out and that it lines up with the playhead. Listen to the five example clips.
 2. **Two-user ownership test: done in session 2 on the local dev worker (4/4 pass, mutation-checked; see BUILD_LOG.md).** Test accounts "Test A" and "Test B" exist. Not repeated on the live URL. Original notes: The spec is the last test in `tests/collab.spec.ts`. Run it with `npx deepspace test run tests/collab.spec.ts --port 5187` (port 5173 was taken by another dev server; don't kill it). It skips until Xuyan creates 2 test accounts, for example:
    `npx deepspace test accounts create --email a@deepspace.test --name "Test A" --password-stdin`
    - The agent must not create accounts or enter passwords.
