@@ -1,9 +1,9 @@
 /**
- * Top nav — minimal placeholder bar wired to the app's mechanisms:
- * nav.ts-driven links (with role/dev filtering), sign-in via <AuthOverlay>,
- * and sign-out. Restyle or rebuild it freely; keep the data-testid hooks
+ * Top bar: the logo, the links from nav.ts (with role/dev filtering), the
+ * "New clip" button, sign-in via <AuthOverlay>, and the account menu with
+ * sign-out. Keep the data-testid hooks
  * (`app-navigation`, `nav-sign-in-button`, `nav-user-name`, `nav-user-email`)
- * — the shipped tests rely on them. `nav-user-email` is the one that carries
+ * — the tests rely on them. `nav-user-email` is the one that carries
  * an identity the test can check exactly: a display name is optional, the
  * email is the credential the session was opened with.
  */
@@ -11,8 +11,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { AuthOverlay, useAuthProfileReady, signOut } from 'deepspace'
-import { ChevronDown, LogOut, Menu, X } from 'lucide-react'
-import { APP_NAME } from '../constants'
+import { ChevronDown, LogOut, Menu, Plus, X } from 'lucide-react'
+import { Logo } from './Logo'
 import type { Role } from '../constants'
 import { nav } from '../nav'
 import { cn } from '../lib/utils'
@@ -58,8 +58,11 @@ export default function Navigation() {
         to={item.path}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'px-3 py-1.5 text-sm',
-          active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+          // The current page is marked with an amber line under its link.
+          'border-b-2 px-3 py-1.5 text-sm md:flex md:h-14 md:items-center md:py-0',
+          active
+            ? 'border-primary text-foreground'
+            : 'border-transparent text-muted-foreground hover:text-foreground',
         )}
       >
         {item.label}
@@ -69,20 +72,32 @@ export default function Navigation() {
 
   return (
     <>
-      <nav data-testid="app-navigation" className="border-b border-border bg-background">
-        <div className="mx-auto flex h-12 max-w-7xl items-center gap-4 px-4">
-          <Link to="/home" className="text-sm font-semibold text-foreground">
-            {APP_NAME}
+      <nav data-testid="app-navigation" className="border-b border-border bg-card">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4">
+          <Link to="/home" aria-label="midishare, all clips">
+            <Logo />
           </Link>
 
           <div className="hidden items-center md:flex">{visibleNav.map(navLink)}</div>
 
           <div className="flex-1" />
 
+          {isSignedIn && (
+            <Link
+              to="/new"
+              aria-label="New clip"
+              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="size-4" aria-hidden />
+              {/* On a phone the button is only the plus sign. */}
+              <span className="hidden sm:inline">New clip</span>
+            </Link>
+          )}
+
           {!isLoaded ? null : isSignedIn && !profileReady ? (
             /* Signed in, profile still loading — skeleton pill, never the
                Sign in button (that would offer sign-in to a signed-in user). */
-            <div className="flex items-center gap-2 rounded-full border border-border bg-card/60 py-1 pl-1 pr-2.5">
+            <div className="flex items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-2.5">
               <div className="h-6 w-6 animate-pulse rounded-full bg-muted" />
               <div className="hidden h-4 w-20 animate-pulse rounded-md bg-muted sm:block" />
             </div>
@@ -92,7 +107,7 @@ export default function Navigation() {
                 render={
                   <button
                     aria-label="Account menu"
-                    className="group flex items-center gap-2 rounded-full border border-border bg-card/60 py-1 pl-1 pr-2.5 text-sm transition-colors hover:bg-card"
+                    className="group flex items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-2.5 text-sm transition-colors hover:bg-accent"
                   >
                     <Avatar className="h-6 w-6 ring-1 ring-inset ring-border">
                       <AvatarImage src={user.imageUrl ?? undefined} referrerPolicy="no-referrer" />
@@ -136,7 +151,7 @@ export default function Navigation() {
             <button
               data-testid="nav-sign-in-button"
               onClick={() => setShowAuthModal(true)}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               Sign in
             </button>

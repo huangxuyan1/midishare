@@ -1,12 +1,13 @@
 /**
- * The AI prompt box on the clip editor. Sends the prompt (and optionally the
- * current ABC, for variations) to POST /api/abc/generate, which returns ABC
+ * The AI box on the clip editor. It sends what you typed, and optionally the
+ * current ABC for variations, to POST /api/abc/generate, which returns ABC
  * that already passed checkAbc on the server.
  */
 import { useState } from 'react'
 import { getAuthToken } from 'deepspace'
 import { Sparkles } from 'lucide-react'
 import { Button, Checkbox, Input, Label } from '@/components/ui'
+import { LEGEND } from '@/lib/utils'
 
 const MAX_PROMPT_LENGTH = 500 // same cap as the server route
 
@@ -42,8 +43,10 @@ export function AiAssist({ currentAbc, onResult }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-border p-3" data-testid="ai-assist">
-      <Label htmlFor="ai-prompt">Ask the AI</Label>
+    <section className="flex flex-col gap-2" data-testid="ai-assist">
+      <Label htmlFor="ai-prompt" className={LEGEND}>
+        Ask the AI
+      </Label>
       <div className="flex gap-2">
         <Input
           id="ai-prompt"
@@ -54,8 +57,9 @@ export function AiAssist({ currentAbc, onResult }: Props) {
           onKeyDown={(e) => e.key === 'Enter' && prompt.trim() && !busy && generate()}
           placeholder="4-bar lo-fi chord progression in D minor"
         />
-        <Button onClick={generate} disabled={busy || prompt.trim() === ''}>
-          <Sparkles className="size-4" /> {busy ? 'Writing…' : 'Generate'}
+        <Button variant="secondary" onClick={generate} loading={busy} disabled={prompt.trim() === ''}>
+          {!busy && <Sparkles className="size-4 text-primary" />}
+          {busy ? 'Writing…' : 'Generate'}
         </Button>
       </div>
       <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -67,7 +71,9 @@ export function AiAssist({ currentAbc, onResult }: Props) {
           {error}
         </p>
       )}
-      <p className="text-xs text-muted-foreground">The result replaces the ABC below. Check it before you save.</p>
-    </div>
+      <p className="text-xs text-muted-foreground">
+        The result replaces the ABC. Check it before you save. Undo brings the old clip back.
+      </p>
+    </section>
   )
 }

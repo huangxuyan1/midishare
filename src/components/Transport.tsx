@@ -5,6 +5,7 @@
 import { useEffect, useRef } from 'react'
 import { Play, SkipBack, Square } from 'lucide-react'
 import { Button } from '@/components/ui'
+import { Tip } from './Tip'
 import type { PlaybackStatus } from '@/lib/use-playback'
 
 type Props = {
@@ -41,19 +42,30 @@ export function Transport({ status, position, barSteps, onPlay, onStop, onReset 
 
   return (
     <div className="flex items-center gap-2" data-testid="transport">
-      <Button size="sm" variant="secondary" onClick={onReset} title="Back to the start">
-        <SkipBack className="size-4" /> Reset
-      </Button>
+      <Tip text="Back to the start">
+        <Button size="sm" variant="ghost" onClick={onReset}>
+          <SkipBack className="size-4" /> Reset
+        </Button>
+      </Tip>
+      {/* Amber means "playing": Stop is lit, Play is not. */}
       {status === 'playing' ? (
-        <Button size="sm" onClick={onStop} title="Stop (space bar)">
-          <Square className="size-4" /> Stop
-        </Button>
+        <Tip text="Stop (space bar)">
+          <Button size="sm" className="w-24" onClick={onStop}>
+            <Square className="size-4" /> Stop
+          </Button>
+        </Tip>
       ) : (
-        <Button size="sm" onClick={onPlay} disabled={status === 'loading'} title="Play (space bar)">
-          <Play className="size-4" /> {status === 'loading' ? 'Loading sound…' : 'Play'}
-        </Button>
+        <Tip text="Play (space bar)">
+          <Button size="sm" variant="outline" className="w-24" onClick={onPlay} loading={status === 'loading'}>
+            {status !== 'loading' && <Play className="size-4 text-primary" />} Play
+          </Button>
+        </Tip>
       )}
-      <span className="ml-2 font-mono text-sm tabular-nums text-muted-foreground" data-testid="position">
+      {/* The counter, styled like a small display: bar.beat */}
+      <span
+        className="rounded-md border border-border bg-roll px-2.5 py-1.5 font-mono text-sm tabular-nums text-primary"
+        data-testid="position"
+      >
         {bar}.{beat}
       </span>
     </div>

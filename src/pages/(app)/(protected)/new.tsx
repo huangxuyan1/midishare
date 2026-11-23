@@ -27,15 +27,15 @@ export default function NewClipPage() {
     }
   }
 
-  if (fromId && status === 'loading') return <p className="p-8 text-muted-foreground">Loading…</p>
+  if (fromId && status === 'loading') return <div className="mx-auto my-10 h-96 max-w-7xl animate-pulse rounded-lg bg-muted" aria-busy="true" />
 
   const initial: ClipFormValues = from
     ? { title: `${from.data.title} (variation)`, description: '', tags: from.data.tags, abc: from.data.abc, source: 'pasted' }
     : { title: '', description: '', tags: '', abc: EXAMPLE_ABC, source: 'pasted' }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-semibold">{from ? 'New variation' : 'New clip'}</h1>
+    <div className="mx-auto max-w-7xl px-4 pt-10">
+      <h1 className="mb-6 text-3xl font-semibold">{from ? 'New variation' : 'New clip'}</h1>
       {/* The key starts a fresh form when the page switches between a variation and a blank clip. */}
       <ClipForm key={fromId ?? 'blank'} initial={initial} ready={ready} onSave={save} />
     </div>

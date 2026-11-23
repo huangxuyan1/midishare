@@ -91,6 +91,26 @@
   --color-shell: #0a0a0a;
   --color-shell-panel: #161616;
 
+  /*
+   * midishare's own tokens (not part of the scaffold).
+   * Declared here so Tailwind generates classes for them: bg-roll, fill-note,
+   * bg-paper, font-mono and so on.
+   */
+  /* Fonts, loaded in index.html */
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  /* Piano roll: the grid, a resting note, and the keyboard (real piano colors) */
+  --color-roll: #151311;
+  --color-roll-dark: #0d0c0a;
+  --color-roll-line: #292622;
+  --color-roll-bar: #4a443a;
+  --color-note: #d9ccb4;
+  --color-key-white: #ebe5d9;
+  --color-key-black: #1a1815;
+  /* Sheet music is drawn in ink on paper */
+  --color-paper: #f3eee4;
+  --color-paper-foreground: #1c1a17;
+
   /* Animations */
   --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
 }
@@ -164,7 +184,7 @@
   }
 
   body {
-    font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-sans);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -227,8 +247,52 @@
    * — never `*`.
    */
 
+  /* Headings sit a little tighter than body text. */
+  h1, h2, h3 {
+    letter-spacing: -0.015em;
+  }
+
   /* Prevent 300ms tap delay on mobile */
   a, button, [role="button"], input, select, textarea {
     touch-action: manipulation;
   }
+}
+
+/*
+ * Playhead sweep on the small piano rolls (MiniRoll): a line moves left to
+ * right, and the amber copy of the notes is revealed behind it.
+ * Each roll sets its own animation-duration.
+ */
+@keyframes roll-sweep-head {
+  from { left: 0; }
+  to { left: 100%; }
+}
+
+@keyframes roll-sweep-lit {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+/* Before the sweep starts: no playhead, no lit notes. */
+.roll-sweep-head { display: none; }
+.roll-sweep-lit { clip-path: inset(0 100% 0 0); }
+
+/* The sweep runs always (landing page) or while the card is hovered (clip cards). */
+.roll-sweep-always .roll-sweep-head,
+.group:hover .roll-sweep-hover .roll-sweep-head {
+  display: block;
+  animation: roll-sweep-head linear infinite;
+  animation-duration: inherit;
+}
+
+.roll-sweep-always .roll-sweep-lit,
+.group:hover .roll-sweep-hover .roll-sweep-lit {
+  animation: roll-sweep-lit linear infinite;
+  animation-duration: inherit;
+}
+
+/* People who ask for less motion get the still roll. */
+@media (prefers-reduced-motion: reduce) {
+  .roll-sweep-head { display: none !important; animation: none !important; }
+  .roll-sweep-lit { animation: none !important; }
 }

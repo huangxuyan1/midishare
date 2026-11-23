@@ -17,7 +17,8 @@ export interface NavItem {
 
 export const nav: NavItem[] = [
   { path: '/home', label: 'Clips' },
-  { path: '/new', label: 'New clip' },
-  { path: '/settings', label: 'Settings' },
+  // Settings needs an account, so signed-out visitors don't see the link.
+  { path: '/settings', label: 'Settings', roles: ['viewer', 'member', 'admin'] },
+  // "New clip" is the button on the right of the bar (see Navigation.tsx).
   // ── Features add nav items below this line ──
 ]

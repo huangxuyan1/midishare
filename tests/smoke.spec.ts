@@ -52,9 +52,31 @@ test.describe('Smoke tests', () => {
     expect(offenders).toEqual([])
   })
 
+  test('landing shows the headline and the demo clip', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Music you can paste.')
+    await expect(page.getByTestId('demo-clip')).toBeVisible()
+    // The page is midishare's own, not the scaffold's.
+    await expect(page).toHaveTitle(/midishare/)
+    expect(await page.locator('html').getAttribute('data-theme')).toBe('studio')
+  })
+
   test('dynamic app boundary mounts on /home', async ({ page }) => {
     await page.goto('/home')
     await expect(page.getByTestId('app-navigation')).toBeVisible({ timeout: 15000 })
+  })
+
+  test('the library shows its heading, a sign-in line and a working search box when signed out', async ({ page }) => {
+    await page.goto('/home')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Clip library', { timeout: 15000 })
+    await expect(page.getByText('Sign in to save your own clips')).toBeVisible()
+    // Either clip cards or the empty state, never a blank page.
+    await expect(page.getByTestId('clip-row').or(page.getByTestId('no-clips')).first()).toBeVisible({ timeout: 15000 })
+    // A search that matches nothing shows the empty state with a way back.
+    await page.getByPlaceholder('Search by title or tag').fill('zzz-no-such-clip')
+    await expect(page.getByTestId('no-clips')).toContainText('No clips match')
+    await page.getByRole('button', { name: 'Clear the filter' }).click()
+    await expect(page.getByPlaceholder('Search by title or tag')).toHaveValue('')
   })
 
   test('sign-in button visible when logged out', async ({ page }) => {

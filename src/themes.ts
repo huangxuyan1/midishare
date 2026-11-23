@@ -1,31 +1,18 @@
 /**
  * Theme catalog.
  *
- * The scaffold ships two placeholder themes: `slate` (dark default, defined
- * in styles.css) and `paper` (light example, defined in themes.css). They
- * are scaffolding, not a design — give the app its own theme before first
- * deploy:
- *   1. Add a `[data-theme="my-id"] { ... }` block in src/themes.css with
- *      the shadcn token overrides (include `color-scheme: light;` for
- *      light themes).
- *   2. Add an entry here for type safety, autocomplete, and UI display.
- *   3. Add the theme's background to the first-paint <style> block in
- *      index.html so the pre-CSS frame matches (no white flash).
- *   4. Switch via `data-theme` on <html> in index.html.
+ * The app has one theme, `studio`, defined in themes.css and selected by
+ * `data-theme` on <html> in index.html. The scaffold's `slate` tokens remain
+ * in styles.css as the baseline that `studio` overrides.
  *
  * Color values live in styles.css / themes.css — this file is metadata only.
  */
 
 export const THEMES = [
   {
-    id: 'slate',
-    label: 'Slate',
-    description: 'Neutral dark placeholder default. Replace with your own theme.',
-  },
-  {
-    id: 'paper',
-    label: 'Paper',
-    description: 'Light example theme showing the token contract. Replace or delete.',
+    id: 'studio',
+    label: 'Studio',
+    description: 'Warm near-black panels with an amber accent, like a lit sequencer in a dim room.',
   },
 ] as const
 
@@ -33,9 +20,9 @@ export type ThemeId = (typeof THEMES)[number]['id']
 
 /** Read the currently active theme id from <html data-theme>. */
 export function getActiveTheme(): ThemeId {
-  if (typeof document === 'undefined') return 'slate'
+  if (typeof document === 'undefined') return 'studio'
   const id = document.documentElement.getAttribute('data-theme') as ThemeId | null
-  return id ?? 'slate'
+  return id ?? 'studio'
 }
 
 /** Look up a theme entry by id, or fall back to the first theme. */

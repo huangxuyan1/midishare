@@ -14,6 +14,7 @@
  */
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
 import { sortNotes, type Note } from '@/lib/abc-notes'
+import { cn } from '@/lib/utils'
 
 const STEP_W = 14 // pixels per 16th note
 const ROW_H = 12 // pixels per semitone
@@ -44,9 +45,11 @@ type Props = {
   playhead: number
   /** While playing, sounding notes light up and the view follows the playhead. */
   playing: boolean
+  /** Extra classes for the scrolling box, e.g. its height. */
+  className?: string
 }
 
-export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Props) {
+export function PianoRoll({ notes, barSteps, onChange, playhead, playing, className }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   // The drag lives in a ref, not state: pointer events can arrive faster than
@@ -152,7 +155,7 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Prop
   }
 
   return (
-    <div ref={scrollRef} className="h-80 overflow-auto rounded-md border border-border bg-background" data-testid="piano-roll">
+    <div ref={scrollRef} className={cn('h-80 overflow-auto bg-roll', className)} data-testid="piano-roll">
       <svg
         ref={svgRef}
         width={width}
@@ -162,23 +165,23 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Prop
         onPointerCancel={cancelDrag}
         className="select-none"
       >
-        {/* Rows: one per pitch. Black-key rows are darker in both light and dark mode. */}
+        {/* Rows: one per pitch. Black-key rows are darker. */}
         {Array.from({ length: rows }, (_, r) => {
           const pitch = HIGHEST - r
           const black = BLACK_KEYS.includes(pitch % 12)
           return (
             <g key={pitch}>
-              <rect x={0} y={r * ROW_H} width={width} height={ROW_H} className={black ? 'fill-black/25' : 'fill-transparent'} />
-              {/* The keyboard: real piano colors, not theme colors, so it never inverts. */}
+              <rect x={0} y={r * ROW_H} width={width} height={ROW_H} className={black ? 'fill-roll-dark' : 'fill-transparent'} />
+              {/* The keyboard, in real piano colors. */}
               <rect
                 x={0}
                 y={r * ROW_H}
                 width={KEYS_W}
                 height={ROW_H}
-                className={black ? 'fill-neutral-900' : 'fill-white stroke-neutral-300'}
+                className={black ? 'fill-key-black' : 'fill-key-white stroke-roll-bar'}
               />
               {pitch % 12 === 0 && (
-                <text x={4} y={r * ROW_H + ROW_H - 2} className="fill-neutral-500 text-[9px]">
+                <text x={4} y={r * ROW_H + ROW_H - 2} className="fill-key-black font-mono text-[9px]">
                   C{pitch / 12 - 1}
                 </text>
               )}
@@ -196,7 +199,7 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Prop
               x2={KEYS_W + step * STEP_W}
               y1={0}
               y2={height}
-              className={step % barSteps === 0 ? 'stroke-foreground/40' : 'stroke-border'}
+              className={step % barSteps === 0 ? 'stroke-roll-bar' : 'stroke-roll-line'}
             />
           )
         })}
@@ -218,7 +221,8 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Prop
             width={n.length * STEP_W - 2}
             height={ROW_H - 2}
             rx={2}
-            className={sounding ? 'fill-amber-400' : dragged?.index === i ? 'fill-primary/70' : 'fill-primary'}
+            // A resting note is pale; it turns amber while it sounds.
+            className={sounding ? 'fill-primary' : dragged?.index === i ? 'fill-note/70' : 'fill-note'}
             style={{ cursor: editable ? 'grab' : 'default' }}
             onPointerDown={editable ? (e) => startDrag(e, i) : undefined}
             onDoubleClick={
@@ -246,7 +250,7 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing }: Prop
           x2={playheadX}
           y1={0}
           y2={height}
-          className="pointer-events-none stroke-amber-400"
+          className="pointer-events-none stroke-primary"
           strokeWidth={2}
         />
       </svg>

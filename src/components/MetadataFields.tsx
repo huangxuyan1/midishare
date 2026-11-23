@@ -3,7 +3,7 @@
  * The parent turns each change into new ABC (see ClipForm).
  */
 import { useState } from 'react'
-import { Input, Label } from '@/components/ui'
+import { Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui'
 import type { AbcHeaders } from '@/lib/abc-headers'
 
 const METERS = ['4/4', '3/4', '2/4', '6/8']
@@ -23,7 +23,6 @@ export function MetadataFields({ headers, onTempo, onMeter, onKey }: Props) {
   // Keep an unusual value from the ABC selectable instead of hiding it.
   const meters = METERS.includes(headers.meter) ? METERS : [headers.meter, ...METERS]
   const keys = KEYS.includes(headers.key) ? KEYS : [headers.key, ...KEYS]
-  const selectClass = 'h-10 rounded-md border border-input bg-background px-3 text-sm'
 
   // The tempo box keeps its own text, so you can type "9" on the way to "90"
   // without it snapping back. When the ABC's tempo changes, the box follows.
@@ -43,7 +42,7 @@ export function MetadataFields({ headers, onTempo, onMeter, onKey }: Props) {
           type="number"
           min={20}
           max={300}
-          className="w-24"
+          className="w-24 font-mono"
           value={tempoText}
           onChange={(e) => {
             setTempoText(e.target.value)
@@ -54,19 +53,33 @@ export function MetadataFields({ headers, onTempo, onMeter, onKey }: Props) {
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="meter">Meter</Label>
-        <select id="meter" className={selectClass} value={headers.meter} onChange={(e) => onMeter(e.target.value)}>
-          {meters.map((m) => (
-            <option key={m}>{m}</option>
-          ))}
-        </select>
+        <Select value={headers.meter} onValueChange={onMeter}>
+          <SelectTrigger id="meter" className="w-24 font-mono">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {meters.map((m) => (
+              <SelectItem key={m} value={m} className="font-mono">
+                {m}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="key">Key</Label>
-        <select id="key" className={selectClass} value={headers.key} onChange={(e) => onKey(e.target.value)}>
-          {keys.map((k) => (
-            <option key={k}>{k}</option>
-          ))}
-        </select>
+        <Select value={headers.key} onValueChange={onKey}>
+          <SelectTrigger id="key" className="w-24 font-mono">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {keys.map((k) => (
+              <SelectItem key={k} value={k} className="font-mono">
+                {k}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   )

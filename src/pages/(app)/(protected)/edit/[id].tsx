@@ -17,7 +17,7 @@ export default function EditClipPage() {
   const { clip, status } = useClip(id)
   const { ready, putConfirmed } = useMutations<Clip>('clips')
 
-  if (status === 'loading') return <p className="p-8 text-muted-foreground">Loading…</p>
+  if (status === 'loading') return <div className="mx-auto my-10 h-96 max-w-7xl animate-pulse rounded-lg bg-muted" aria-busy="true" />
   if (!clip) return <p className="p-8">Clip not found.</p>
   if (clip.createdBy !== userId) return <p className="p-8">You can only edit your own clips.</p>
 
@@ -32,8 +32,8 @@ export default function EditClipPage() {
 
   const { title, description, tags, abc, source } = clip.data
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-semibold">Edit clip</h1>
+    <div className="mx-auto max-w-7xl px-4 pt-10">
+      <h1 className="mb-6 text-3xl font-semibold">Edit clip</h1>
       {/* The key gives each clip its own form, so going from one clip's edit page to another's doesn't keep the old values. */}
       <ClipForm key={clip.recordId} initial={{ title, description, tags, abc, source }} ready={ready} onSave={save} />
     </div>
