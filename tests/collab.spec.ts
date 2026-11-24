@@ -280,6 +280,53 @@ test('the editor lines up voices that have different numbers of lines', async ({
   await expect(error).toBeVisible()
 })
 
+test('dragging in the ruler moves the playhead', async ({ users }) => {
+  const [a] = await users(1)
+  await a.page.goto('/new')
+  const notes = a.page.getByTestId('roll-note')
+  await expect(notes.first()).toBeVisible({ timeout: 15_000 })
+  const abc = a.page.getByLabel('ABC notation')
+  const text = 'X:1\nT:Seek\nM:4/4\nL:1/4\nK:C\nC D E F | G A B c |]'
+  await abc.fill(text)
+  await expect(notes).toHaveCount(8)
+
+  const position = a.page.getByTestId('position')
+  const playhead = a.page.getByTestId('playhead')
+  await expect(position).toHaveText('1.1')
+
+  // The roll draws 14 pixels per 16th note, after a 36-pixel keyboard.
+  const ruler = (await a.page.getByTestId('ruler').boundingBox())!
+  const xOfStep = (step: number) => ruler.x + 36 + step * 14
+  const y = ruler.y + ruler.height / 2
+
+  // Step 20 is bar 2, beat 2. The playhead follows the pointer while the button is down.
+  await a.page.mouse.move(xOfStep(0), y)
+  await a.page.mouse.down()
+  await a.page.mouse.move(xOfStep(20), y, { steps: 5 })
+  await expect(position).toHaveText('2.2')
+  await expect(playhead).toHaveAttribute('x1', String(36 + 20 * 14))
+
+  // It keeps following below the ruler, and it stops at the start of the roll.
+  await a.page.mouse.move(xOfStep(8), y + 100, { steps: 5 })
+  await expect(position).toHaveText('1.3')
+  await a.page.mouse.move(ruler.x - 50, y + 100, { steps: 5 })
+  await expect(position).toHaveText('1.1')
+  await a.page.mouse.move(xOfStep(8), y, { steps: 5 })
+  await a.page.mouse.up()
+  await expect(position).toHaveText('1.3')
+  await expect(playhead).toHaveAttribute('x1', String(36 + 8 * 14))
+
+  // After the button is up, moving the pointer does nothing. A single click jumps.
+  await a.page.mouse.move(xOfStep(20), y)
+  await expect(position).toHaveText('1.3')
+  await a.page.mouse.click(xOfStep(16), y)
+  await expect(position).toHaveText('2.1')
+
+  // Moving the playhead is not an edit: the notes and the ABC are untouched.
+  await expect(notes).toHaveCount(8)
+  await expect(abc).toHaveValue(text)
+})
+
 test('the clip page shows a read-only piano roll with a transport', async ({ users }) => {
   const [a] = await users(1)
   await a.page.goto('/home')
@@ -305,10 +352,14 @@ test('the clip page shows a read-only piano roll with a transport', async ({ use
     await expect(notes).toHaveCount(4)
 
     // Read-only, even for the owner: double-clicking does not add or delete.
-    await roll.dblclick({ position: { x: 200, y: 20 } })
+    await roll.dblclick({ position: { x: 200, y: 60 } })
     await notes.first().dblclick()
     await expect(notes).toHaveCount(4)
     expect((await readClip(a, recordId)).abc).toBe(EXAMPLE_ABC)
+
+    // The playhead can still be moved here: a click in the ruler at step 8 (36 + 8 * 14 pixels).
+    await a.page.getByTestId('ruler').click({ position: { x: 36 + 8 * 14, y: 9 } })
+    await expect(a.page.getByTestId('position')).toHaveText('1.3')
   } finally {
     await callTool(a, 'records_delete', { collection: 'clips', recordId }).catch(() => {})
   }

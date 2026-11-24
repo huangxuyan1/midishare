@@ -5,12 +5,13 @@
  * - Drag a note to move it (left/right = time, up/down = pitch).
  * - Drag a note's right edge to make it longer or shorter.
  * - Double-click a note to delete it.
+ * - Click or drag in the ruler (the strip of bar numbers) to move the playhead.
  *
  * Everything snaps to a 16th-note grid. While you drag, the roll shows a local
  * copy of the notes; onChange is called once, when you let go.
  *
  * Without onChange the roll is read-only: it only shows the notes and the
- * playhead. The clip page uses it that way.
+ * playhead, which can still be dragged. The clip page uses it that way.
  */
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
 import { sortNotes, type Note } from '@/lib/abc-notes'
@@ -22,6 +23,7 @@ const KEYS_W = 36 // keyboard labels on the left
 const LOWEST = 36 // C2
 const HIGHEST = 95 // B6
 const EDGE = 6 // grab zone for resizing, at a note's right end
+const RULER_H = 18 // the strip of bar numbers above the grid
 const BLACK_KEYS = [1, 3, 6, 8, 10]
 
 type Drag = {
@@ -45,16 +47,21 @@ type Props = {
   playhead: number
   /** While playing, sounding notes light up and the view follows the playhead. */
   playing: boolean
+  /** Called with the new position, in 16ths, on every move while the playhead is dragged. */
+  onSeek?: (step: number) => void
+  /** Called once with the final position when the playhead is dropped. */
+  onSeekEnd?: (step: number) => void
   /** Extra classes for the scrolling box, e.g. its height. */
   className?: string
 }
 
-export function PianoRoll({ notes, barSteps, onChange, playhead, playing, className }: Props) {
+export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek, onSeekEnd, className }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   // The drag lives in a ref, not state: pointer events can arrive faster than
   // React re-renders, and each handler must see the latest drag right away.
   const drag = useRef<Drag | null>(null)
+  const seeking = useRef(false) // true while the pointer is held down in the ruler
   const [dragged, setDragged] = useState<{ index: number; note: Note } | null>(null) // what to draw
   const [newLength, setNewLength] = useState(2) // new notes copy the last length you used
   const editable = onChange !== undefined
@@ -154,8 +161,63 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, classN
     setDragged(null)
   }
 
+  // The playhead is dragged in the ruler, so it never competes with the notes for the pointer.
+  function stepInRuler(e: PointerEvent<SVGSVGElement>) {
+    const box = e.currentTarget.getBoundingClientRect()
+    return clamp(Math.round((e.clientX - box.left - KEYS_W) / STEP_W), 0, steps)
+  }
+
+  function startSeek(e: PointerEvent<SVGSVGElement>) {
+    if (e.button !== 0) return
+    e.currentTarget.setPointerCapture(e.pointerId) // keep following the pointer outside the ruler
+    seeking.current = true
+    onSeek?.(stepInRuler(e))
+  }
+
+  function moveSeek(e: PointerEvent<SVGSVGElement>) {
+    if (seeking.current) onSeek?.(stepInRuler(e))
+  }
+
+  function endSeek(e: PointerEvent<SVGSVGElement>) {
+    if (!seeking.current) return
+    seeking.current = false
+    onSeek?.(stepInRuler(e))
+    onSeekEnd?.(stepInRuler(e))
+  }
+
   return (
     <div ref={scrollRef} className={cn('h-80 overflow-auto bg-roll', className)} data-testid="piano-roll">
+      {/* The ruler: bar numbers and the playhead's handle. It stays at the top while the grid scrolls up and down. */}
+      <svg
+        width={width}
+        height={RULER_H}
+        onPointerDown={startSeek}
+        onPointerMove={moveSeek}
+        onPointerUp={endSeek}
+        onPointerCancel={endSeek}
+        className="sticky top-0 z-10 block cursor-ew-resize touch-none select-none bg-roll"
+        data-testid="ruler"
+      >
+        <title>Click or drag to move the playhead</title>
+        <line x1={0} x2={width} y1={RULER_H - 0.5} y2={RULER_H - 0.5} className="stroke-roll-bar" />
+        {Array.from({ length: bars }, (_, bar) => {
+          const x = KEYS_W + bar * barSteps * STEP_W
+          return (
+            <g key={bar}>
+              <line x1={x} x2={x} y1={0} y2={RULER_H} className="stroke-roll-bar" />
+              <text x={x + 4} y={RULER_H - 5} className="fill-muted-foreground font-mono text-[10px]">
+                {bar + 1}
+              </text>
+            </g>
+          )
+        })}
+        <polygon
+          data-testid="playhead-handle"
+          points={`${playheadX - 6},0 ${playheadX + 6},0 ${playheadX},${RULER_H - 6}`}
+          className="fill-primary"
+        />
+      </svg>
+
       <svg
         ref={svgRef}
         width={width}
@@ -163,7 +225,7 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, classN
         onPointerMove={moveDrag}
         onPointerUp={endDrag}
         onPointerCancel={cancelDrag}
-        className="select-none"
+        className="block select-none"
       >
         {/* Rows: one per pitch. Black-key rows are darker. */}
         {Array.from({ length: rows }, (_, r) => {

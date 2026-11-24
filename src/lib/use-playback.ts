@@ -3,6 +3,8 @@
  * - play starts from the playhead
  * - stop pauses and leaves the playhead where it is
  * - reset stops and moves the playhead back to the start
+ * - seek moves the playhead while it is dragged; a playing clip goes quiet
+ *   during the drag and carries on from where the playhead is dropped
  *
  * `position` is the playhead in 16th-note steps (the piano roll's grid), updated
  * every animation frame while playing. It is computed from the clock, not read
@@ -25,6 +27,7 @@ export function usePlayback(abc: string, barSteps: number) {
   const durationMs = useRef(0)
   const msPerStep = useRef(0)
   const frame = useRef(0)
+  const resumeAfterSeek = useRef(false) // a drag of the playhead interrupted playback
 
   function stopAudio() {
     synth.current?.stop()
@@ -40,7 +43,8 @@ export function usePlayback(abc: string, barSteps: number) {
     }
   }, [abc])
 
-  async function play() {
+  /** Builds the audio if the music changed, then plays from the given step. */
+  async function playFrom(step: number) {
     const [tune] = abcjs.parseOnly(abc)
     if (!tune || !abcjs.synth.supportsAudio()) return
 
@@ -56,8 +60,8 @@ export function usePlayback(abc: string, barSteps: number) {
       msPerStep.current = tune.millisecondsPerMeasure() / barSteps
     }
 
-    const from = position * msPerStep.current
-    if (from >= durationMs.current) return // playhead is past the end; press reset
+    let from = step * msPerStep.current
+    if (from >= durationMs.current) from = 0 // the playhead is past the end of the music: start over
     synth.current!.seek(from / 1000, 'seconds')
     synth.current!.start()
     setStatus('playing')
@@ -78,9 +82,30 @@ export function usePlayback(abc: string, barSteps: number) {
     tick()
   }
 
+  function play() {
+    return playFrom(position)
+  }
+
   function stop() {
     stopAudio()
     setStatus('stopped')
+  }
+
+  /** Called on every move while the playhead is dragged. */
+  function seek(step: number) {
+    if (status === 'loading') return // the audio is being built; it will start from the old place
+    if (status === 'playing') {
+      stop()
+      resumeAfterSeek.current = true
+    }
+    setPosition(Math.max(0, step))
+  }
+
+  /** Called once when the playhead is dropped. */
+  function endSeek(step: number) {
+    if (!resumeAfterSeek.current) return
+    resumeAfterSeek.current = false
+    void playFrom(step)
   }
 
   function reset() {
@@ -88,5 +113,5 @@ export function usePlayback(abc: string, barSteps: number) {
     setPosition(0)
   }
 
-  return { status, position, play, stop, reset }
+  return { status, position, play, stop, reset, seek, endSeek }
 }

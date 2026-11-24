@@ -204,9 +204,12 @@ export function ClipForm({ initial, ready, onSave }: Props) {
           onChange={(next) => setAbc(writeNotesIntoAbc(values.abc, next))}
           playhead={playback.position}
           playing={playback.status === 'playing'}
+          onSeek={playback.seek}
+          onSeekEnd={playback.endSeek}
         />
         <p className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
           Double-click to add a note, drag to move it, drag its right edge to resize, double-click a note to delete it.
+          Drag in the bar numbers to move the playhead.
           Editing here rewrites the music lines of the ABC, so chord symbols become written-out notes.
         </p>
       </section>

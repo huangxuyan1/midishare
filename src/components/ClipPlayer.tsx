@@ -36,7 +36,14 @@ export function ClipPlayer({ abc }: { abc: string }) {
             onReset={playback.reset}
           />
         </div>
-        <PianoRoll notes={notes} barSteps={barSteps} playhead={playback.position} playing={playback.status === 'playing'} />
+        <PianoRoll
+          notes={notes}
+          barSteps={barSteps}
+          playhead={playback.position}
+          playing={playback.status === 'playing'}
+          onSeek={playback.seek}
+          onSeekEnd={playback.endSeek}
+        />
       </section>
 
       <Tabs defaultValue="sheet">
