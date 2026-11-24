@@ -384,6 +384,47 @@ test('while a long clip plays, the playhead stays in the middle and the roll sli
   expect((await view()).scroll).toBe(0)
 })
 
+test('importing a MIDI file replaces the clip with its notes', async ({ users }) => {
+  const [a] = await users(1)
+  await a.page.goto('/new')
+  const notes = a.page.getByTestId('roll-note')
+  await expect(notes.first()).toBeVisible({ timeout: 15_000 })
+  const abc = a.page.getByLabel('ABC notation')
+  const before = await abc.inputValue()
+  const picker = a.page.getByTestId('midi-file')
+  const note = a.page.getByTestId('import-note')
+
+  // A two-track file with 96 ticks per quarter note. Track 1 sets the tempo to
+  // 150 BPM; track 2 plays C4 and then E4, a quarter note each.
+  const ascii = (text: string) => [...text].map((c) => c.charCodeAt(0))
+  const endOfTrack = [0x00, 0xff, 0x2f, 0x00]
+  const bytes = [
+    ...[...ascii('MThd'), 0, 0, 0, 6, 0, 1, 0, 2, 0, 96],
+    ...[...ascii('MTrk'), 0, 0, 0, 11, 0x00, 0xff, 0x51, 0x03, 0x06, 0x1a, 0x80, ...endOfTrack],
+    ...[...ascii('MTrk'), 0, 0, 0, 20],
+    ...[0x00, 0x90, 60, 100, 96, 0x80, 60, 0],
+    ...[0x00, 0x90, 64, 100, 96, 0x80, 64, 0],
+    ...endOfTrack,
+  ]
+  await picker.setInputFiles({ name: 'Two notes.mid', mimeType: 'audio/midi', buffer: Buffer.from(bytes) })
+
+  await expect(notes).toHaveCount(2)
+  await expect(note).toHaveText('Imported Two notes.mid: 1 bar.')
+  await expect(a.page.locator('#title')).toHaveValue('Two notes')
+  await expect(abc).toHaveValue(/Q:1\/4=150\nK:C\nC2 E2 z4 \|\]/)
+  await expect(a.page.getByTestId('abc-error')).toHaveCount(0)
+  await expect(a.page.getByTestId('abc-notation').locator('svg')).toBeVisible()
+
+  // One undo brings the clip from before the import back.
+  await a.page.keyboard.press('Control+z')
+  await expect(abc).toHaveValue(before)
+
+  // A file that is not MIDI changes nothing and says why.
+  await picker.setInputFiles({ name: 'notes.mid', mimeType: 'audio/midi', buffer: Buffer.from('hello') })
+  await expect(note).toHaveText('This is not a MIDI file.')
+  await expect(abc).toHaveValue(before)
+})
+
 test('a note is resized by dragging either end, and the cursor shows it', async ({ users }) => {
   const [a] = await users(1)
   await a.page.goto('/new')

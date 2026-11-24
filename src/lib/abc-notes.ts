@@ -57,7 +57,7 @@ export function abcToNotes(abc: string): Note[] {
 type AudioSetup = { tracks: { cmd: string; pitch: number; start: number; duration: number }[][] }
 
 /** Two notes on the same pitch at the same time can't be shown apart; keep the longer one. */
-function dedupe(notes: Note[]): Note[] {
+export function dedupe(notes: Note[]): Note[] {
   const byKey = new Map<string, Note>()
   for (const n of notes) {
     const key = `${n.pitch}@${n.start}`

@@ -10,7 +10,7 @@ ABC is the one format everywhere: it is what's stored, what the AI writes, and w
 
 1. Open https://midishare.app.space/home. Published clips are readable without signing in: open one, press Play, download the `.mid`, copy the ABC.
 2. Sign in, then choose **New clip**.
-3. Type a prompt into **Ask the AI** (for example "4-bar lo-fi chord progression in D minor"), or paste ABC, or double-click the piano roll to add notes.
+3. Type a prompt into **Ask the AI** (for example "4-bar lo-fi chord progression in D minor"), or paste ABC, or choose **Import MIDI** and pick a `.mid` file, or double-click the piano roll to add notes.
 4. Press Play above the piano roll. Save as a draft, or publish.
 5. On your clip's page: Edit, Publish/Unpublish, Delete. On anyone's clip: **Make a variation** opens the editor with that clip's ABC.
 
@@ -26,6 +26,7 @@ ABC is the one format everywhere: it is what's stored, what the AI writes, and w
 | Piano roll | SVG, 16th-note grid, C2–B6. Double-click adds a note, drag moves it, drag either end to resize, double-click a note to delete it. A ruler of bar numbers runs along the top. Pointing at a note shows its name; pressing it plays its pitch, and dragging it plays each pitch it passes. Read-only on the clip page. | `src/components/PianoRoll.tsx`, `src/lib/note-preview.ts` |
 | Transport | Play, Stop, Reset, a bar.beat counter and a moving playhead. In a clip wider than the view, the playhead stays in the middle while the roll slides under it. Click or drag in the roll's ruler to move the playhead; a playing clip carries on from where it is dropped. The space bar toggles play/stop. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
 | ABC ↔ notes | ABC → notes uses abcjs's own audio data, so the roll shows what you hear. Notes → ABC writes chords, ties and extra voices. | `src/lib/abc-notes.ts`, `src/lib/abc-headers.ts` |
+| MIDI import | **Import MIDI** in the editor reads a `.mid` file in the browser and replaces the clip with its notes, written as ABC. All tracks are merged into one, the drum channel is skipped, and the first tempo and time signature are kept. | `src/lib/midi-import.ts` |
 | AI assistant | `POST /api/abc/generate`: sign-in required, capped prompt, one model call through DeepSpace's AI proxy. The reply must parse as ABC; if it doesn't, the model gets one retry with the parser's errors. | `src/server/abc-routes.ts`, `src/components/AiAssist.tsx` |
 | Validation | ABC is valid when it has a `K:` line, abcjs finds music, and abcjs reports no warnings. One warning is allowed: a length that isn't one written note value (`z5`), which is legal ABC. Voices must also be in step: abcjs matches voices by text line, so voices with different numbers of music lines are refused, and the editor offers a "Line up voices" button that rewrites them four bars per line. The editor and the AI route use the same check. | `src/lib/abc.ts`, `src/lib/abc-voices.ts` |
 
@@ -65,15 +66,16 @@ Checks:
 ```bash
 npx tsc --noEmit
 npx eslint src
-npx vitest run             # 50 unit tests: schema permissions, ABC validation, ABC <-> notes, voices, note preview, undo history
-npm run test:e2e           # 20 Playwright tests; the signed-in ones need two DeepSpace test accounts
+npx vitest run             # 61 unit tests: schema permissions, ABC validation, ABC <-> notes, voices, note preview, MIDI import, undo history
+npm run test:e2e           # 21 Playwright tests; the signed-in ones need two DeepSpace test accounts
 ```
 
 The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's direct server calls to read A's draft, or to edit, unpublish or delete A's clips, come back `READ DENIED`, `UPDATE DENIED` and `DELETE DENIED`.
 
 ## Known limits
 
-- **ABC only.** No velocity, no timing finer than a 16th note, and no `.mid` import. Importing MIDI and converting it to ABC is the next step.
+- **ABC only.** No velocity and no timing finer than a 16th note.
+- **MIDI import keeps the notes, not the performance.** Starts and ends snap to 16th notes, so triplets and swing are straightened. Velocity, instruments and later tempo changes are dropped, notes outside C2–B6 move by octaves, and the key is set to C (choose another key to re-spell the notes). A file too long for one clip (5000 characters of ABC) is cut at a bar line, and the editor says how many bars it kept.
 - **Editing in the piano roll rewrites the music lines.** Chord symbols such as `"Dm"` become written-out notes, and overlapping notes move into extra voices. The result plays the same but is not the same text.
 - **One track.** The roll has a single lane of notes, C2–B6.
 - **A key change re-spells the notes; it does not transpose.** In keys without flats, B♭ is written as `^A`.

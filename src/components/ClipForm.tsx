@@ -8,6 +8,7 @@
  *   that header (meter and key also rewrite the music so the notes stay put)
  * - the sheet music preview renders the ABC
  * - the transport above the roll plays it, with a playhead on the roll
+ * - "Import MIDI" replaces the ABC with a .mid file's notes (see lib/midi-import.ts)
  * Saving is disabled until the ABC parses and the clip has a title.
  *
  * Undo/redo: the form's values live in a history (see lib/history.ts), and
@@ -18,7 +19,7 @@
  * that stays at the bottom of the window.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Redo2, Undo2 } from 'lucide-react'
+import { Redo2, Undo2, Upload } from 'lucide-react'
 import { Button, Input, Label, Textarea } from '@/components/ui'
 import { AbcView } from './AbcView'
 import { AiAssist } from './AiAssist'
@@ -32,6 +33,7 @@ import { lineUpVoices } from '@/lib/abc-voices'
 import { readHeaders, setHeader } from '@/lib/abc-headers'
 import { abcToNotes, barLengthInSteps, writeNotesIntoAbc, type Note } from '@/lib/abc-notes'
 import { pushStep, redo, replacePresent, startHistory, undo } from '@/lib/history'
+import { midiToAbc, titleFromFileName } from '@/lib/midi-import'
 import { LEGEND } from '@/lib/utils'
 import { CLIP_LIMITS, type ClipSource, type ClipStatus } from '@/schemas/clips-schema'
 
@@ -60,6 +62,8 @@ export function ClipForm({ initial, ready, onSave }: Props) {
   const values = history.present
   const lastTypedAt = useRef(0) // time of the last keystroke; 0 when the last change wasn't typing
   const [saving, setSaving] = useState<ClipStatus | null>(null) // which save button is busy
+  const fileInput = useRef<HTMLInputElement>(null) // the hidden file picker behind "Import MIDI"
+  const [importNote, setImportNote] = useState<{ text: string; failed: boolean } | null>(null)
   const check = checkAbc(values.abc)
   const canSave = ready && saving === null && check.ok && values.title.trim() !== ''
   // Voices that are out of step get a one-click fix, offered only when the rewrite passes the check.
@@ -133,6 +137,22 @@ export function ClipForm({ initial, ready, onSave }: Props) {
     change((v) => ({ ...v, title, abc: setHeader(v.abc, 'T', title) }), true)
   }
 
+  /** Replaces the clip's ABC with the notes of a .mid file. One undo brings the old clip back. */
+  async function importMidi(file: File) {
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer())
+      const { abc, bars, totalBars } = midiToAbc(bytes, titleFromFileName(file.name).slice(0, CLIP_LIMITS.title), CLIP_LIMITS.abc)
+      change((v) => ({ ...withAbc(v, abc), source: 'pasted' }))
+      const text =
+        bars < totalBars
+          ? `Imported the first ${bars} of ${totalBars} bars of ${file.name}. A clip holds at most ${CLIP_LIMITS.abc} characters of ABC.`
+          : `Imported ${file.name}: ${bars} ${bars === 1 ? 'bar' : 'bars'}.`
+      setImportNote({ text, failed: false })
+    } catch (err) {
+      setImportNote({ text: err instanceof Error ? err.message : String(err), failed: true })
+    }
+  }
+
   async function save(status: ClipStatus) {
     setSaving(status)
     try {
@@ -186,6 +206,23 @@ export function ClipForm({ initial, ready, onSave }: Props) {
                 <Redo2 className="size-4" /> Redo
               </Button>
             </Tip>
+            <Tip text="Replace the clip with the notes of a .mid file">
+              <Button size="sm" variant="ghost" onClick={() => fileInput.current?.click()}>
+                <Upload className="size-4" /> Import MIDI
+              </Button>
+            </Tip>
+            <input
+              ref={fileInput}
+              type="file"
+              accept=".mid,.midi,audio/midi"
+              className="hidden"
+              data-testid="midi-file"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) void importMidi(file)
+                e.target.value = '' // so that picking the same file again fires a change
+              }}
+            />
           </div>
           <Transport
             status={playback.status}
@@ -207,6 +244,14 @@ export function ClipForm({ initial, ready, onSave }: Props) {
           onSeek={playback.seek}
           onSeekEnd={playback.endSeek}
         />
+        {importNote && (
+          <p
+            className={`border-t border-border px-4 py-2 text-xs ${importNote.failed ? 'text-destructive' : 'text-foreground'}`}
+            data-testid="import-note"
+          >
+            {importNote.text}
+          </p>
+        )}
         <p className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
           Double-click to add a note, drag to move it, drag either end to resize, double-click a note to delete it.
           Press a note to hear it. Drag in the bar numbers to move the playhead.
