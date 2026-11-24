@@ -9,11 +9,11 @@ For the next agent session. Read this first, then [CLAUDE.md](../CLAUDE.md) (wor
 The app is finished and submittable. What is left is Xuyan's own checking and the submission note.
 
 - **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
-  - Latest release: `rel_01M869FRMC64EVV8JEBJRQP9AX`, commit `932bc78` (session 4), `dirty: false`. Every commit after it changes only docs.
+  - Latest release: `rel_01M86CTPKEBJG8A1P56T420SQF`, commit `ca03f10` (session 4), `dirty: false`. Every commit after it changes only docs.
 - **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`. Everything is committed and pushed.
   - The DeepSpace source is GitHub. **Never run `deepspace push`.**
 - **Data:** 5 published example clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan. Xuyan had not listened to them when they were published.
-- **Tests:** 61 unit tests and 21 Playwright tests pass. Type-check and lint are clean.
+- **Tests:** 63 unit tests and 21 Playwright tests pass. Type-check and lint are clean.
   - `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`
   - `npx deepspace test run all --port 5187` (port 5173 belongs to another dev server; don't kill it)
 - **Test accounts:** "Test A" and "Test B" exist. The Playwright fixture signs them in from the CLI's saved credentials.
@@ -92,6 +92,8 @@ Sound comes from abcjs's synth, which downloads piano samples from a third-party
   - `npx deepspace logs --since 10m` shows server errors.
 - **Test accounts:** when Xuyan needs to create one, give the full command with `--password <value>` filled in. Xuyan runs it. The agent never types a password into the production site.
 - **abcjs ties inside chords:** abcjs only follows a tie inside a chord into a next chord that has the tied note at the same position. That's why the writer uses voices.
+- **abcjs remembers one tied chord at a time, across all voices.** A chord tied over a line break loses its tie when another voice's line, read in between, has a tied chord. The writer (`splitIntoVoices`) therefore never puts a note that crosses a line break into a chord.
+- **abcjs ignores accidentals on the later pieces of a tied note.** After `^F2- | ^F2`, a plain `F` in the second bar plays F natural. The writer (`writeVoice`) does not count such an accidental for the rest of the bar, so the next F# gets its own `^`.
 - **Pointer capture:** the piano roll captures the pointer on the dragged note, not on the SVG. Click and double-click go to the capturing element, so capturing on the SVG broke double-click-to-delete. Test mouse behaviour with real input (Playwright), not dispatched events.
 - **abcjs `onEnded`** also fires on a manual stop. `use-playback.ts` detects the end from the duration `prime()` returns.
 - **AI credits:** an unset `maxOutputTokens` reserves 64k tokens of credits up front and fails with 402. Keep the 2000 cap.
