@@ -328,6 +328,62 @@ test('dragging in the ruler moves the playhead', async ({ users }) => {
   await expect(abc).toHaveValue(text)
 })
 
+test('while a long clip plays, the playhead stays in the middle and the roll slides under it', async ({ users }) => {
+  test.setTimeout(60_000)
+  const [a] = await users(1)
+  await a.page.goto('/new')
+  await expect(a.page.getByTestId('roll-note').first()).toBeVisible({ timeout: 15_000 })
+
+  // Twelve bars at 300 BPM: about ten seconds, and several times wider than the view.
+  const bars = Array.from({ length: 12 }, () => 'C D E F').join(' | ')
+  await a.page.getByLabel('ABC notation').fill(`X:1\nT:Follow\nM:4/4\nL:1/4\nQ:1/4=300\nK:C\n${bars} |]`)
+  await expect(a.page.getByTestId('roll-note')).toHaveCount(48)
+
+  /** Where the roll is scrolled to, and where the playhead is inside the visible part. */
+  const view = () =>
+    a.page.evaluate(() => {
+      const roll = document.querySelector('[data-testid="piano-roll"]')!
+      const head = document.querySelector('[data-testid="playhead"]')!
+      return {
+        scroll: roll.scrollLeft,
+        maxScroll: roll.scrollWidth - roll.clientWidth,
+        playheadAt: head.getBoundingClientRect().x - roll.getBoundingClientRect().x,
+        middle: roll.clientWidth / 2,
+      }
+    })
+
+  // Playing needs the piano samples from the network, so give it time to start.
+  const transport = a.page.getByTestId('transport')
+  await transport.getByRole('button', { name: 'Play' }).click()
+  await expect(transport.getByRole('button', { name: 'Stop' })).toBeVisible({ timeout: 30_000 })
+
+  // Once the playhead has reached the middle, the roll moves and the playhead stays there.
+  await expect.poll(async () => (await view()).scroll, { timeout: 10_000 }).toBeGreaterThan(50)
+  const first = await view()
+  expect(Math.abs(first.playheadAt - first.middle)).toBeLessThan(4)
+  await a.page.waitForTimeout(500)
+  const second = await view()
+  expect(second.scroll).toBeGreaterThan(first.scroll + 100)
+  expect(second.scroll).toBeLessThan(second.maxScroll)
+  expect(Math.abs(second.playheadAt - second.middle)).toBeLessThan(4)
+
+  // Near the end the roll has nowhere left to go, and the playhead travels on to the right.
+  await expect
+    .poll(
+      async () => {
+        const v = await view()
+        return v.scroll >= v.maxScroll - 1 && v.playheadAt > v.middle + 40
+      },
+      { timeout: 15_000, intervals: [100] },
+    )
+    .toBe(true)
+
+  // At the end the playhead returns to the start, and so does the view.
+  await expect(transport.getByRole('button', { name: 'Play' })).toBeVisible({ timeout: 15_000 })
+  await expect(a.page.getByTestId('position')).toHaveText('1.1')
+  expect((await view()).scroll).toBe(0)
+})
+
 test('a note is resized by dragging either end, and the cursor shows it', async ({ users }) => {
   const [a] = await users(1)
   await a.page.goto('/new')

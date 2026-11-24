@@ -55,7 +55,7 @@ type Props = {
   onChange?: (notes: Note[]) => void
   /** Playhead position in 16ths (see usePlayback). */
   playhead: number
-  /** While playing, sounding notes light up and the view follows the playhead. */
+  /** While playing, sounding notes light up and the roll slides under the playhead. */
   playing: boolean
   /** Called with the new position, in 16ths, on every move while the playhead is dragged. */
   onSeek?: (step: number) => void
@@ -99,16 +99,19 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
     // Only on mount: later edits shouldn't jump the view.
   }, [])
 
-  // While playing, scroll sideways to keep the playhead in view.
+  // While playing, the playhead stays in the middle of the view and the roll
+  // slides left under it. The browser keeps scrollLeft inside the roll, which
+  // gives the two ends for free: at the start the playhead travels to the
+  // middle before the roll moves, and near the end the roll stops and the
+  // playhead travels on to the right.
   const playheadX = KEYS_W + playhead * STEP_W
   useEffect(() => {
     const el = scrollRef.current
-    if (!el || !playing) return
-    const visibleRight = el.scrollLeft + el.clientWidth
-    if (playheadX > visibleRight - 40 || playheadX < el.scrollLeft + KEYS_W) {
-      el.scrollLeft = playheadX - KEYS_W - 40
-    }
-  }, [playheadX, playing])
+    if (!el) return
+    if (playing) el.scrollLeft = playheadX - el.clientWidth / 2
+    // Back at the start (Reset, or the end of the clip): show the start again.
+    else if (playhead === 0) el.scrollLeft = 0
+  }, [playheadX, playhead, playing])
 
   function pointInGrid(e: { clientX: number; clientY: number }) {
     const box = svgRef.current!.getBoundingClientRect()
