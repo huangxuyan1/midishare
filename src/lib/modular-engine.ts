@@ -2,38 +2,33 @@
  * The audio engine that uses Modular, Xuyan's audio graph runtime, compiled
  * to WebAssembly and playing a soundfont.
  *
- * NOT IN USE YET. `engine` in audio-engine.ts still points at abcjs, and the
- * Modular web build does not exist yet. This file is written against the
- * contract agreed with the Modular project, so it can be tested with a fake
- * instrument until the real one arrives.
+ * NOT IN USE YET. `engine` in audio-engine.ts still points at abcjs.
  *
  * How it works: the clip goes to Modular as the same MIDI bytes that
  * Download .mid produces. Modular sends back the left and right channels as
  * two arrays of samples, and we copy them into an AudioBuffer.
+ *
+ * The instrument comes from a function passed in (`loadPiano` in
+ * modular-piano.ts on the site), so the tests can pass a fake one.
  */
+import type { Instrument } from '../modular/modular.mjs'
 import { abcToMidi } from './abc'
 import type { AudioEngine } from './audio-engine'
 
-/** Samples between -1 and 1, in memory that JavaScript owns (not WebAssembly's). */
-type Samples = Float32Array<ArrayBuffer>
-
-/** What Modular's web build gives the page: an instrument that renders MIDI. */
-export type ModularInstrument = {
-  /** Renders a Standard MIDI File at the given rate. Rejects with Modular's error message. */
-  render(midi: Uint8Array, sampleRate: number): Promise<{ sampleRate: number; channels: [Samples, Samples] }>
-}
-
 /**
  * Makes the engine. `loadInstrument` loads the Modular module and the
- * soundfont; it is called once, on the first render, and the instrument is
- * kept for the life of the page.
+ * soundfont. It is called on the first render and the instrument is kept for
+ * the life of the page. If loading fails, the next render tries again.
  */
-export function modularEngine(loadInstrument: () => Promise<ModularInstrument>): AudioEngine {
-  let instrument: Promise<ModularInstrument> | null = null
+export function modularEngine(loadInstrument: () => Promise<Instrument>): AudioEngine {
+  let instrument: Promise<Instrument> | null = null
 
   return {
     async render(abc, context) {
-      instrument ??= loadInstrument()
+      instrument ??= loadInstrument().catch((error) => {
+        instrument = null // forget the failed load, so the next render starts a new one
+        throw error
+      })
       const piano = await instrument
       const { sampleRate, channels } = await piano.render(abcToMidi(abc), context.sampleRate)
       const [left, right] = channels

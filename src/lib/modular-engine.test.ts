@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { abcToMidi, EXAMPLE_ABC } from './abc'
-import { modularEngine, type ModularInstrument } from './modular-engine'
+import type { Instrument } from '../modular/modular.mjs'
+import { modularEngine } from './modular-engine'
 import { previewAbc } from './note-preview'
 
 /** Stands in for the browser's AudioContext: remembers what was copied into each buffer. */
@@ -24,7 +25,7 @@ function fakeContext(sampleRate: number) {
 /** Stands in for Modular: remembers what it was asked to render and answers with fixed samples. */
 function fakeInstrument(left: number[], right: number[]) {
   const calls: { midi: Uint8Array; sampleRate: number }[] = []
-  const instrument: ModularInstrument = {
+  const instrument: Instrument = {
     async render(midi, sampleRate) {
       calls.push({ midi, sampleRate })
       return { sampleRate, channels: [new Float32Array(left), new Float32Array(right)] }
@@ -76,6 +77,21 @@ describe('modularEngine', () => {
     expect(calls).toHaveLength(2)
   })
 
+  it('tries to load the instrument again after a load that failed', async () => {
+    const { instrument } = fakeInstrument([0.5], [0.5])
+    const { context } = fakeContext(48000)
+    let loads = 0
+    const engine = modularEngine(async () => {
+      loads++
+      if (loads === 1) throw new Error('the download failed')
+      return instrument
+    })
+
+    await expect(engine.render(EXAMPLE_ABC, context)).rejects.toThrow('the download failed')
+    expect(await engine.render(EXAMPLE_ABC, context)).not.toBeNull()
+    expect(loads).toBe(2)
+  })
+
   it('a note preview reaches Modular as a MIDI file holding that pitch', async () => {
     const { instrument, calls } = fakeInstrument([0.5], [0.5])
     const { context } = fakeContext(48000)
@@ -97,7 +113,7 @@ describe('modularEngine', () => {
   })
 
   it("passes on Modular's error when a render fails", async () => {
-    const instrument: ModularInstrument = {
+    const instrument: Instrument = {
       render: async () => {
         throw new Error('the clip is longer than ten minutes')
       },

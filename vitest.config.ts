@@ -15,9 +15,9 @@ const appDir = fileURLToPath(new URL('.', import.meta.url))
 //      tests/*.spec.ts and fail. Explicit unit-test paths keep the runners
 //      separate; Playwright runs via `npm test` / tests/playwright.config.ts.
 //
-// Unit tests live next to their source. The Node-only tests (prerender, and
-// the check of the piano soundfont file) stay at the root so they do not
-// enter the browser/Worker TypeScript project in src/.
+// Unit tests live next to their source. The Node-only tests (prerender, the
+// check of the piano soundfont file, and real renders through Modular) stay at
+// the root so they do not enter the browser/Worker TypeScript project in src/.
 export default defineConfig({
   // Same app id the bundle is built with, from the same wrangler config —
   // so a unit test importing src/constants.ts sees what the browser will.
@@ -29,7 +29,7 @@ export default defineConfig({
   },
   test: {
     // Unit tests only; tests/*.spec.ts are Playwright suites run separately.
-    include: ['prerender.test.ts', 'piano-soundfont.test.ts', 'src/**/*.{test,spec}.{ts,tsx}'],
+    include: ['prerender.test.ts', 'piano-soundfont.test.ts', 'modular-piano.test.ts', 'src/**/*.{test,spec}.{ts,tsx}'],
     environment: 'node',
   },
 })
