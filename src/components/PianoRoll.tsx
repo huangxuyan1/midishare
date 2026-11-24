@@ -6,15 +6,19 @@
  * - Drag a note's right edge to make it longer or shorter.
  * - Double-click a note to delete it.
  * - Click or drag in the ruler (the strip of bar numbers) to move the playhead.
+ * - Point at a note to see its name. Press a note to hear it; while you drag
+ *   it up or down, you hear every pitch it passes.
  *
  * Everything snaps to a 16th-note grid. While you drag, the roll shows a local
  * copy of the notes; onChange is called once, when you let go.
  *
- * Without onChange the roll is read-only: it only shows the notes and the
- * playhead, which can still be dragged. The clip page uses it that way.
+ * Without onChange the roll is read-only: the notes can't be changed, but
+ * they still show their names and sound when pressed, and the playhead can
+ * still be dragged. The clip page uses it that way.
  */
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
 import { sortNotes, type Note } from '@/lib/abc-notes'
+import { playPreview } from '@/lib/note-preview'
 import { cn } from '@/lib/utils'
 
 const STEP_W = 14 // pixels per 16th note
@@ -24,6 +28,8 @@ const LOWEST = 36 // C2
 const HIGHEST = 95 // B6
 const EDGE = 6 // grab zone for resizing, at a note's right end
 const RULER_H = 18 // the strip of bar numbers above the grid
+const LABEL_W = 30 // the tag that names the note under the pointer
+const LABEL_H = 14
 const BLACK_KEYS = [1, 3, 6, 8, 10]
 
 type Drag = {
@@ -63,10 +69,13 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
   const drag = useRef<Drag | null>(null)
   const seeking = useRef(false) // true while the pointer is held down in the ruler
   const [dragged, setDragged] = useState<{ index: number; note: Note } | null>(null) // what to draw
+  const [hovered, setHovered] = useState<number | null>(null) // index of the note under the pointer
   const [newLength, setNewLength] = useState(2) // new notes copy the last length you used
   const editable = onChange !== undefined
 
   const shown = dragged ? notes.map((n, i) => (i === dragged.index ? dragged.note : n)) : notes
+  // The note whose name is shown: the one being dragged, else the one under the pointer.
+  const labelled = dragged ? dragged.note : hovered !== null ? (shown[hovered] ?? null) : null
   const lastEnd = Math.max(0, ...shown.map((n) => n.start + n.length))
   // When editing: at least 4 bars, and always one empty bar to grow into.
   const bars = editable ? Math.max(4, Math.ceil(lastEnd / barSteps) + 1) : Math.max(1, Math.ceil(lastEnd / barSteps))
@@ -112,8 +121,18 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
     onChange?.(notes.filter((_, i) => i !== index))
   }
 
-  function startDrag(e: PointerEvent, index: number) {
+  /** Plays the pitch as a short note. Not while the clip plays: the two would clash. */
+  function preview(pitch: number) {
+    if (!playing) void playPreview(pitch)
+  }
+
+  function pressNote(e: PointerEvent, index: number) {
     if (e.button !== 0) return
+    preview(notes[index].pitch)
+    if (editable) startDrag(e, index)
+  }
+
+  function startDrag(e: PointerEvent, index: number) {
     const note = notes[index]
     const { x, y } = pointInGrid(e)
     const noteRight = (note.start + note.length) * STEP_W
@@ -133,6 +152,7 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
     const dSteps = Math.round((x - d.x) / STEP_W)
     const dRows = Math.round((y - d.y) / ROW_H)
     const o = d.original
+    const pitchBefore = d.changed.pitch
     d.changed =
       d.mode === 'move'
         ? {
@@ -141,6 +161,7 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
             pitch: clamp(o.pitch - dRows, LOWEST, HIGHEST), // screen y grows downward
           }
         : { ...o, length: Math.max(1, o.length + dSteps) }
+    if (d.changed.pitch !== pitchBefore) preview(d.changed.pitch) // hear each pitch the note passes
     setDragged({ index: d.index, note: d.changed })
   }
 
@@ -159,6 +180,7 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
   function cancelDrag() {
     drag.current = null
     setDragged(null)
+    setHovered(null) // an edit re-sorts the notes, so the index may now be another note
   }
 
   // The playhead is dragged in the ruler, so it never competes with the notes for the pointer.
@@ -285,8 +307,12 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
             rx={2}
             // A resting note is pale; it turns amber while it sounds.
             className={sounding ? 'fill-primary' : dragged?.index === i ? 'fill-note/70' : 'fill-note'}
-            style={{ cursor: editable ? 'grab' : 'default' }}
-            onPointerDown={editable ? (e) => startDrag(e, i) : undefined}
+            style={{ cursor: editable ? 'grab' : 'pointer' }}
+            onPointerDown={(e) => pressNote(e, i)}
+            // Move as well as enter: after a drag the pointer is still on the note, and no "enter" comes.
+            onPointerEnter={() => setHovered(i)}
+            onPointerMove={() => setHovered(i)}
+            onPointerLeave={() => setHovered(null)}
             onDoubleClick={
               editable
                 ? (e) => {
@@ -295,15 +321,28 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
                   }
                 : undefined
             }
-          >
-            <title>
-              {editable
-                ? `${noteName(n.pitch)} · drag to move, drag the right edge to resize, double-click to delete`
-                : noteName(n.pitch)}
-            </title>
-          </rect>
+          />
           )
         })}
+
+        {/* The name of the note under the pointer, in a small tag above it (below it in the top rows). */}
+        {labelled && (
+          <g
+            className="pointer-events-none"
+            transform={`translate(${KEYS_W + labelled.start * STEP_W}, ${rowY(labelled.pitch) + (labelled.pitch > HIGHEST - 2 ? ROW_H + 2 : -LABEL_H - 2)})`}
+          >
+            <rect width={LABEL_W} height={LABEL_H} rx={3} className="fill-popover stroke-primary" />
+            <text
+              x={LABEL_W / 2}
+              y={LABEL_H - 4}
+              textAnchor="middle"
+              className="fill-foreground font-mono text-[10px]"
+              data-testid="note-label"
+            >
+              {noteName(labelled.pitch)}
+            </text>
+          </g>
+        )}
 
         {/* The playhead. pointer-events-none so it never blocks clicks on notes. */}
         <line

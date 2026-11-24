@@ -327,8 +327,67 @@ test('dragging in the ruler moves the playhead', async ({ users }) => {
   await expect(abc).toHaveValue(text)
 })
 
+/**
+ * The note preview loads one piano sample per pitch (C4.mp3, Db4.mp3, ...), so
+ * the requests for them show which pitches the page asked to play.
+ */
+function watchSamples(page: MultiplayerUser['page']): string[] {
+  const samples: string[] = []
+  page.on('request', (request) => {
+    const match = request.url().match(/-mp3\/(\w+)\.mp3/)
+    if (match) samples.push(match[1])
+  })
+  return samples
+}
+
+test('a note shows its name under the pointer, and sounds when pressed or dragged to a new pitch', async ({ users }) => {
+  const [a] = await users(1)
+  const samples = watchSamples(a.page)
+  await a.page.goto('/new')
+  const notes = a.page.getByTestId('roll-note')
+  await expect(notes.first()).toBeVisible({ timeout: 15_000 })
+
+  // One whole note on middle C.
+  await a.page.getByLabel('ABC notation').fill('X:1\nT:Preview\nM:4/4\nL:1/4\nK:C\nC4 |]')
+  await expect(notes).toHaveCount(1)
+  const label = a.page.getByTestId('note-label')
+  await expect(label).toHaveCount(0)
+
+  // Pointing at the note names it, without a sound.
+  const box = (await notes.first().boundingBox())!
+  const x = box.x + 40
+  const y = box.y + box.height / 2
+  await a.page.mouse.move(x, y)
+  await expect(label).toHaveText('C4')
+  expect(samples).toEqual([])
+
+  // Pressing it plays its pitch.
+  await a.page.mouse.down()
+  await expect.poll(() => samples).toEqual(['C4'])
+
+  // Dragging it up plays each new pitch, one row (12 pixels) at a time.
+  await a.page.mouse.move(x, y - 12)
+  await expect(label).toHaveText('C#4')
+  await a.page.mouse.move(x, y - 24)
+  await expect(label).toHaveText('D4')
+  await a.page.mouse.move(x, y - 36)
+  await expect(label).toHaveText('D#4')
+  await expect.poll(() => samples).toEqual(['C4', 'Db4', 'D4', 'Eb4'])
+
+  // Moving sideways keeps the pitch, so nothing new plays.
+  await a.page.mouse.move(x + 28, y - 36)
+  await a.page.mouse.up()
+  await expect(a.page.getByLabel('ABC notation')).toHaveValue(/\^D/)
+  expect(samples).toEqual(['C4', 'Db4', 'D4', 'Eb4'])
+
+  // Away from the note, the name goes.
+  await a.page.mouse.move(x + 28, y + 60)
+  await expect(label).toHaveCount(0)
+})
+
 test('the clip page shows a read-only piano roll with a transport', async ({ users }) => {
   const [a] = await users(1)
+  const samples = watchSamples(a.page)
   await a.page.goto('/home')
   await expect(a.page.getByTestId('nav-user-name')).toHaveText(/\S/, { timeout: 15_000 })
 
@@ -356,6 +415,11 @@ test('the clip page shows a read-only piano roll with a transport', async ({ use
     await notes.first().dblclick()
     await expect(notes).toHaveCount(4)
     expect((await readClip(a, recordId)).abc).toBe(EXAMPLE_ABC)
+
+    // The notes still show their names and sound when pressed: the first one is middle C.
+    await notes.first().hover()
+    await expect(a.page.getByTestId('note-label')).toHaveText('C4')
+    await expect.poll(() => samples).toContain('C4')
 
     // The playhead can still be moved here: a click in the ruler at step 8 (36 + 8 * 14 pixels).
     await a.page.getByTestId('ruler').click({ position: { x: 36 + 8 * 14, y: 9 } })
