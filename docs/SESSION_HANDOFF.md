@@ -25,14 +25,14 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 2. **Xuyan, the submission note.** Edit [SUBMISSION.md](SUBMISSION.md) and resolve its two TODO lines (the by-ear check, and any code Xuyan changed by hand). Then submit in the portal: live URL, repository, note.
 3. **After any code change:** run the checks, commit, deploy, and confirm `dirty: false`. Verify the changed path on the live URL. Add rows to BUILD_LOG.md.
 4. **Done in session 3: the Studio UI.** Xuyan looked at it and approved it ("really, really cool"). Changes to colours, fonts or layout go through `src/themes.css` (the `studio` block), `src/styles.css` (app tokens) and the page files in the table below.
-5. **Done in session 4: ABC from the MIDI Clipboard bridge.** Lengths like `z5` are accepted, and voices with different numbers of lines get a "Line up voices" button in the editor. `lineUpVoices` returns null (no button, only the message) when the music has lyrics, comments, mid-tune fields or inline `[V:]` marks. The bridge itself is unchanged.
+5. **Done in session 4: ABC from the MIDI Clipboard bridge.** Lengths like `z5` are accepted, and voices with different numbers of lines get a "Line up voices" button in the editor. `lineUpVoices` returns null (no button, only the message) when the music has lyrics, comments, mid-tune fields or inline `[V:]` marks. The agent did not change the bridge.
 6. **Optional polish**, only if Xuyan asks:
    - `/new` starts with an empty title while the example ABC has `T:Example`
    - in keys without flats (C, Am…), B♭ is spelled `^A`
    - click the bar numbers to seek
 7. **Set aside, separate tasks:**
    - **Modular as the audio engine, with a soundfont supernode.** Planned only; see [MODULAR_AUDIO_ENGINE.md](MODULAR_AUDIO_ENGINE.md). The Modular part belongs in a session opened in the Modular folder.
-   - **Switching the Ableton bridge to ABC** (`C:\Users\alvin\Documents\Projects\midi-clipboard`). See HANDOFF.md §5.
+   - **The Ableton bridge now copies and pastes ABC** (`C:\Users\alvin\Documents\Projects\midi-clipboard`). Xuyan did this outside this folder (bridge commit `5d60b4d`, not pushed to GitHub when checked on 2026-11-24) and tested both directions by hand on 2026-11-24: a clip copied in Live pastes into the editor, and a clip's ABC copied from the site pastes into Live.
 
 ## 3. What the app does
 

@@ -72,6 +72,7 @@ A coding agent (Claude Code) wrote most of the code. I made the product and arch
 - **TODO (Xuyan):** confirm that the sound lines up with the playhead, and that the clip page's button returns to Play at the end. The agent could check the playhead's timing but cannot hear.
 - I reviewed the Studio design after the agent built it and kept it as it is.
 - I pasted a clip exported from Ableton by my own bridge, and the editor rejected it for a `z5` rest (five eighths). The ABC standard allows such a length, so I decided the site must accept it. The agent changed the validation; the sheet music draws the nearest note shape. The same clip then played out of step, because abcjs matches voices by text line and my bridge had written one voice on fewer lines. I chose to fix that on the site too: the editor now refuses such ABC with an explanation and offers a "Line up voices" button that rewrites it.
+- I tested the round trip with Ableton Live by hand. Ctrl+C on a MIDI clip in Live copies ABC text through my bridge, and it pasted into the editor. I then copied a clip's ABC from the site and pasted it into Live. Both worked.
 - **TODO (Xuyan):** list anything you changed in the code by hand.
 
 ## Not finished
@@ -79,6 +80,6 @@ A coding agent (Claude Code) wrote most of the code. I made the product and arch
 - **The two-user ownership test ran on the local dev worker, not on the live URL.** It runs the same RecordRoom and schema as the deploy, but I did not repeat it with two accounts on midishare.app.space.
 - **No `.mid` import.** This is the next feature I would build: parse the file in the browser, quantize to the 16th grid, and reuse the notes → ABC writer.
 - **The sound is abcjs's built-in synth, with piano samples from a third-party host.** I want to replace it with Modular, my own graph audio runtime, compiled to WebAssembly, with a soundfont instrument. I inspected what that needs and wrote the plan in `docs/MODULAR_AUDIO_ENGINE.md`; none of it is built.
-- **The Ableton bridge is not switched to ABC.** My `midi-clipboard` project copies notes between Ableton Live and the clipboard in its own format. Until it writes ABC, moving a clip between the site and Ableton is not a single paste.
+- **The Ableton bridge is a separate project, and its round trip is checked by hand only.** My `midi-clipboard` project now copies a clip in Ableton Live as ABC and pastes ABC back into Live. No automated test covers a clip going from Live to the site and back.
 - **Small edges:** `/new` starts with an empty title while the example ABC says `T:Example`; in keys without flats, B♭ is spelled `^A`; browse and search run in the browser, which is fine at this size.
 - **Scaffold leftovers:** the scaffold's unused Durable Objects (Yjs, canvas, presence, cron, jobs) are still declared in `worker.ts`, because removing a deployed Durable Object class needs a migration. The scaffold's AI chat routes and debug page were removed.

@@ -24,4 +24,4 @@ DeepSpace SWE Intern (Summer 2027) build exercise: an ABC-notation clip-sharing 
 
 ## Related
 - Using Modular (`C:\Users\alvin\Documents\Projects\Modular`) as the audio engine is planned, set aside as a separate task: [docs/MODULAR_AUDIO_ENGINE.md](docs/MODULAR_AUDIO_ENGINE.md).
-- The Ableton bridge lives at `C:\Users\alvin\Documents\Projects\midi-clipboard` (outside this folder). Switching it to ABC is a separate workstream (docs/HANDOFF.md section 5).
+- The Ableton bridge lives at `C:\Users\alvin\Documents\Projects\midi-clipboard` (outside this folder). It copies and pastes ABC since 2026-11-24 (Xuyan's work there; background in docs/HANDOFF.md section 5).

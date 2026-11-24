@@ -80,7 +80,7 @@ The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's 
 - **Browse and search run in the browser** over every clip the server lets the caller read. That is fine for a small site and would need server-side filtering and paging for a large one.
 - **The sound is abcjs's built-in synth.** It downloads piano samples from a third-party host when you press Play. Replacing it with my own audio engine is planned: see [docs/MODULAR_AUDIO_ENGINE.md](docs/MODULAR_AUDIO_ENGINE.md).
 - **The AI assistant writes at most 16 bars** and spends the signed-in user's DeepSpace credits.
-- **The Ableton bridge** ([midi-clipboard](https://github.com/huangxuyan1/midi-clipboard), a separate project) still uses its own note format, not ABC. Copy and paste of ABC text works on the site without it.
+- **The Ableton bridge** ([midi-clipboard](https://github.com/huangxuyan1/midi-clipboard), a separate project) is not part of this repo. It copies a MIDI clip in Ableton Live as ABC text and pastes ABC text back into Live, so a clip moves between Live and the site with one copy and one paste. That round trip was checked by hand, not by a test.
 
 ## How it was built
 
