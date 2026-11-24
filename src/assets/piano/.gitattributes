@@ -1,0 +1,4 @@
+# Keep these files byte for byte: the provenance file records their SHA-256 values.
+*.sf2 binary
+COPYING -text
+*.provenance.txt -text

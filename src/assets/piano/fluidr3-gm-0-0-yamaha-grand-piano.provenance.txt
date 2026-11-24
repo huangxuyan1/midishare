@@ -1,0 +1,47 @@
+fluidr3-gm-0-0-yamaha-grand-piano.sf2
+
+Size: 7,812,018 bytes
+SHA-256: 9609e512c25098284c6c0d402da0a5c85be77656e148262a2b93b834a5be0d08
+
+One preset of FluidR3_GM, "Yamaha Grand Piano" (bank 0, program 0), with every
+zone, as a SoundFont 2 file. Made by Modular's scripts/soundfont_extract.py at
+commit 6f1d9eba0a03ac8844d79a170ec32ca87d5a0f48 (Modular's main, PR 31), a clean checkout:
+
+  python -I scripts/soundfont_extract.py extract FluidR3_GM.sf2 --preset 0:0
+      --notice COPYING
+      --source-url https://sources.debian.org/data/main/f/fluid-soundfont/3.1-6/FluidR3_GM.sf2
+      --source-version "Debian fluid-soundfont 3.1-6"
+      --output fluidr3-gm-0-0-yamaha-grand-piano.sf2
+
+The same command from the same commit, with the same source and notice, gives
+the same bytes.
+
+Provenance, as the extract's comment field (ICMT) holds it after the notice:
+
+  This file holds one preset of the source below, copied by Modular's
+  scripts/soundfont_extract.py.
+  Source URL: https://sources.debian.org/data/main/f/fluid-soundfont/3.1-6/FluidR3_GM.sf2
+  Source version: Debian fluid-soundfont 3.1-6
+  Source SHA-256: 74594e8f4250680adf590507a306655a299935343583256f3b722c48a1bc1cb0
+  Preset: bank 0, program 0, "Yamaha Grand Piano"
+  Modular commit: 6f1d9eba0a03ac8844d79a170ec32ca87d5a0f48
+
+Source: FluidR3_GM.sf2, 148,398,306 bytes, SHA-256 as above.
+
+Licence: MIT. The full notice is COPYING from the same Debian source,
+https://sources.debian.org/data/main/f/fluid-soundfont/3.1-6/COPYING,
+1,086 bytes, SHA-256 8ef830b65c97a976b86e34bb5fde08d99dfb1db13c4149b5b20bc837ac6c4568.
+It is held whole in the extract's comment field (ICMT), and its copyright field
+(ICOP) keeps the source's own line: "Frank Wen 2000-2002, 2008; Toby Smithe 2008".
+
+Checked natively (Windows, MSVC Release): Modular's soundfont node, with its
+loops, renders a clip of every key 0-127 at velocities across 1-127 identically,
+bit for bit, with preset 0:0 selected in FluidR3_GM.sf2 and with this extract's
+only preset, at 44.1 kHz and 48 kHz. The tool's own reader prints the same preset
+structure (zones, generators, modulators, sample headers and sample points) for
+both files.
+
+Regenerated from Modular's main after PR 31 merged; it differs from the branch-commit
+extract (SHA-256 527971ff...) only in the commit line of its comment field. The native
+render check above was made on that earlier extract; the sample data and hydra are
+byte-identical.
