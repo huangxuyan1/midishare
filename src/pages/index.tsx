@@ -14,7 +14,8 @@
  * - Color: warm near-black dominant, amber accent, muted everywhere except what plays.
  * - Type: IBM Plex Mono (headline, labels) + IBM Plex Sans (body) — the product
  *   is plain text you can read, so the headline is set like text you could paste.
- * - Theme: dark — a music tool, used next to a DAW.
+ * - Theme: dark by default — a music tool, used next to a DAW. A light theme
+ *   (Daylight, see themes.css) is one click away.
  * - Art direction: modern minimalism — flat panels, hairline borders, one accent.
  * - Motion: mechanical — one linear sweep of the playhead, nothing else moves.
  * - Voice: second person; short sentences; no exclamation points.
@@ -34,6 +35,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { Logo } from '../components/Logo'
 import { Seo } from '../components/Seo'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { DemoClip } from '../components/landing/DemoClip'
 import { LEGEND } from '../lib/utils'
 import { seo } from '../seo'
@@ -58,9 +60,12 @@ export default function Landing() {
       <div data-testid="static-landing" className="flex min-h-screen flex-col">
         <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
           <Logo />
-          <Link to="/home" className="text-sm text-muted-foreground hover:text-foreground">
-            Browse clips
-          </Link>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link to="/home" className="text-sm text-muted-foreground hover:text-foreground">
+              Browse clips
+            </Link>
+          </div>
         </header>
 
         <main className="flex-1">

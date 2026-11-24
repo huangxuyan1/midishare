@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <!--
-  Active theme is set on the <html> element below.
-  To switch themes, change `data-theme` to any id defined in src/themes.ts.
+  The default theme is set on the html element below. The first script in the
+  head switches it to the visitor's saved choice (see src/themes.ts).
+  Don't write the head tag in angle brackets in a comment up here: Vite puts
+  its own scripts after the first one it finds, comment or not.
   Color values per theme live in src/themes.css.
 -->
 <html lang="en" data-theme="studio">
@@ -19,13 +21,27 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
     />
     <!--
-      First-paint background, keyed to the data-theme attribute above.
+      Apply the theme the visitor chose last time, before anything is painted.
+      The key and the theme ids mirror src/themes.ts; keep them in sync.
+    -->
+    <script>
+      try {
+        if (localStorage.getItem('midishare-theme') === 'daylight') {
+          document.documentElement.setAttribute('data-theme', 'daylight')
+        }
+      } catch (e) {
+        // Storage is blocked: stay on the default theme.
+      }
+    </script>
+    <!--
+      First-paint background, keyed to the data-theme attribute.
       Without this the browser paints white until the CSS bundle arrives —
-      a hard flash on the dark themes. Each value mirrors --color-background
-      of the studio theme in src/themes.css; keep them in sync.
+      a hard flash on the dark theme. Each value mirrors --color-background
+      of that theme in src/themes.css; keep them in sync.
     -->
     <style>
       html { background-color: #131210; color-scheme: dark; }
+      html[data-theme="daylight"] { background-color: #dcdfe2; color-scheme: light; }
     </style>
   </head>
   <body>

@@ -57,9 +57,10 @@ Sound comes from abcjs's synth, which downloads piano samples from a third-party
 
 ### Design
 
-- **Theme:** `studio` (`src/themes.css`), selected in `index.html`. Warm near-black panels and one amber accent. Amber marks what is playing and the main action; a resting note is pale.
+- **Themes:** `studio` (dark, the default) and `daylight` (light, added 2026-11-24), both in `src/themes.css`. Studio: warm near-black panels and one amber accent. Amber marks what is playing and the main action; a resting note is pale. Daylight: cool gray panels, a teal accent in place of amber, mid-gray resting notes that turn teal while they sound.
+- **Theme switch:** the sun/moon button (`ThemeToggle`) in the top bar and on the landing page. `src/themes.ts` sets `data-theme` on `<html>` and saves the choice in localStorage (`midishare-theme`); a script in `index.html` applies it before the first paint. A first visit is always dark; the system setting is not read.
 - **Fonts:** IBM Plex Sans and IBM Plex Mono, loaded from Google Fonts in `index.html`. Mono is for the headline, small labels (`LEGEND` in `src/lib/utils.ts`), counters and ABC text.
-- **App tokens** (piano roll, note, keyboard) are in the `@theme` block of `src/styles.css`, so classes like `bg-roll` and `fill-note` exist.
+- **App tokens** (piano roll, note, keyboard) are in the `@theme` block of `src/styles.css`, so classes like `bg-roll` and `fill-note` exist. Those are the dark values; the `daylight` block overrides them.
 - **Rules followed**, from docs.deep.space/design: no hardcoded colours in the landing files, kit primitives instead of browser defaults (`Select`, tooltips via `Tip`, `ConfirmModal`, `EmptyState`), `/* home pattern: … */` as the first line of `home.tsx`. The gate greps are in BUILD_LOG.md.
 
 ## 4. Decisions already made by Xuyan (don't reopen)
@@ -76,7 +77,7 @@ Sound comes from abcjs's synth, which downloads piano samples from a third-party
 - Repo cleanup: process docs live in `docs/`; the unmounted AI chat routes and the `/api-status` page are removed; the installed skill copies are gitignored.
 - The Modular audio engine is a separate task, set aside.
 - **Chosen by the agent; Xuyan may change these:**
-  - Inside the Studio direction: the exact colours, IBM Plex, no light mode, "New clip" as a button in the bar, Settings hidden when signed out.
+  - Inside the Studio direction: the exact colours, IBM Plex, no light mode (Xuyan asked for one on 2026-11-24, see Themes above), "New clip" as a button in the bar, Settings hidden when signed out.
   - A key change keeps the pitches and re-spells them; it does not transpose.
   - Stop keeps the playhead where it is.
   - The example clips carry source `ai`, so they show the "AI-generated" badge.

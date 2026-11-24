@@ -10,8 +10,7 @@
  *
  * The @theme block below holds the default theme (slate). All other themes
  * live in `themes.css` as `[data-theme="<id>"]` override blocks. Switching
- * themes = changing the data-theme attribute on <html> in index.html. No
- * JS, no FOUC.
+ * themes = changing the data-theme attribute on <html> (see themes.ts).
  *
  * Status colors (success, warning, info) are intentionally NOT themed —
  * they stay consistent across every preset.
@@ -99,7 +98,8 @@
   /* Fonts, loaded in index.html */
   --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  /* Piano roll: the grid, a resting note, and the keyboard (real piano colors) */
+  /* Piano roll: the grid, a resting note, and the keyboard (real piano colors).
+     These are the dark values; the daylight theme overrides them in themes.css. */
   --color-roll: #151311;
   --color-roll-dark: #0d0c0a;
   --color-roll-line: #292622;

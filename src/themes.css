@@ -1,8 +1,10 @@
 /*
  * Theme overrides — applied via <html data-theme="<id>">.
  *
- * `styles.css` holds the scaffold's baseline tokens (@theme block). The app's
- * own theme is the `studio` block below; index.html selects it.
+ * `styles.css` holds the scaffold's baseline tokens (@theme block). The app
+ * has two themes of its own: `studio` (dark, the default) and `daylight`
+ * (light). index.html starts on `studio`; the visitor switches with the
+ * ThemeToggle button, and src/themes.ts remembers the choice.
  *
  * To add another theme:
  *   1. Add a `[data-theme="my-id"] { ... }` block overriding the tokens below.
@@ -10,7 +12,6 @@
  *   2. Add an entry to `src/themes.ts`.
  *   3. Add the theme's --color-background to the first-paint <style> block
  *      in index.html, so the first frame matches.
- *   4. Switch to it via `data-theme` on <html> in index.html.
  */
 
 /*
@@ -44,4 +45,54 @@
   --shadow-card-hover: 0 2px 8px 0 rgba(0, 0, 0, 0.4);
   --color-shell: #0e0d0c;
   --color-shell-panel: #1c1a17;
+}
+
+/*
+ * Daylight — the light theme. Cool grays like the faceplate of a hardware
+ * synth, never pure white, so it stays easy on the eyes. Panels are lighter
+ * than the page, and the piano roll is the lightest surface.
+ *
+ * The accent is teal, not amber: amber is too pale to read on a light page,
+ * and teal sits opposite amber on the color wheel, so it plays the same role
+ * here that amber plays in Studio. Text colors keep a contrast of 4.5:1 or
+ * more against the page, the cards and the roll.
+ *
+ * This block also overrides the piano roll tokens, whose dark values are the
+ * defaults in styles.css.
+ */
+[data-theme="daylight"] {
+  color-scheme: light;
+  --color-background: #dcdfe2;
+  --color-foreground: #16191c;
+  --color-card: #e8ebed;
+  --color-card-foreground: #16191c;
+  --color-popover: #eef0f2;
+  --color-popover-foreground: #16191c;
+  --color-primary: #0a5f66;
+  --color-primary-foreground: #f2fbfb;
+  --color-secondary: #cfd3d7;
+  --color-secondary-foreground: #16191c;
+  --color-muted: #d0d4d8;
+  --color-muted-foreground: #4f565d;
+  --color-accent: #c6cbd0;
+  --color-accent-foreground: #16191c;
+  --color-destructive: #b42331;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #bdc2c7;
+  --color-input: #adb3b9;
+  --color-ring: #0a5f66;
+  --radius: 0.375rem;
+  --shadow-card: 0 1px 2px 0 rgba(20, 30, 40, 0.1);
+  --shadow-card-hover: 0 2px 8px 0 rgba(20, 30, 40, 0.14);
+  --color-shell: #d2d6d9;
+  --color-shell-panel: #e8ebed;
+  /* Piano roll: light grid and the same piano keys. A resting note is mid
+     gray, so a sounding note (teal, and darker) stands out from it. */
+  --color-roll: #f1f3f5;
+  --color-roll-dark: #e3e6e9;
+  --color-roll-line: #d9dde0;
+  --color-roll-bar: #a9afb5;
+  --color-note: #79818a;
+  --color-key-white: #fbfcfc;
+  --color-key-black: #22262a;
 }

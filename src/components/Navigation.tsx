@@ -1,6 +1,6 @@
 /**
  * Top bar: the logo, the links from nav.ts (with role/dev filtering), the
- * "New clip" button, sign-in via <AuthOverlay>, and the account menu with
+ * dark/light switch, the "New clip" button, sign-in via <AuthOverlay>, and the account menu with
  * sign-out. Keep the data-testid hooks
  * (`app-navigation`, `nav-sign-in-button`, `nav-user-name`, `nav-user-email`)
  * — the tests rely on them. `nav-user-email` is the one that carries
@@ -13,6 +13,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { AuthOverlay, useAuthProfileReady, signOut } from 'deepspace'
 import { ChevronDown, LogOut, Menu, Plus, X } from 'lucide-react'
 import { Logo } from './Logo'
+import { ThemeToggle } from './ThemeToggle'
 import type { Role } from '../constants'
 import { nav } from '../nav'
 import { cn } from '../lib/utils'
@@ -81,6 +82,8 @@ export default function Navigation() {
           <div className="hidden items-center md:flex">{visibleNav.map(navLink)}</div>
 
           <div className="flex-1" />
+
+          <ThemeToggle />
 
           {isSignedIn && (
             <Link
