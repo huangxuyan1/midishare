@@ -55,7 +55,12 @@ export function usePlayback(abc: string, barSteps: number) {
 
     if (bufferAbc.current !== abc) {
       setStatus('loading')
-      buffer.current = await engine.render(abc, context)
+      try {
+        buffer.current = await engine.render(abc, context)
+      } catch {
+        setStatus('stopped') // the audio could not be made; Play can be pressed again
+        return
+      }
       bufferAbc.current = abc
       msPerStep.current = tune.millisecondsPerMeasure() / barSteps
     }
