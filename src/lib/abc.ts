@@ -64,11 +64,20 @@ function voicesInStep(tune: abcjs.TuneObject): boolean {
   return new Set(shapes).size <= 1
 }
 
-/** Turns ABC into a .mid file and starts a browser download. */
-export function downloadMidi(abc: string, title: string) {
+/**
+ * The clip as the bytes of a Standard MIDI File (.mid).
+ * Download .mid and the Modular audio engine both get their bytes here, so
+ * what a clip sounds like and what its download contains can't drift apart.
+ */
+export function abcToMidi(abc: string): Uint8Array<ArrayBuffer> {
   // 'binary' returns one Uint8Array per tune in the text; clips hold one tune.
   const [bytes] = abcjs.synth.getMidiFile(abc, { midiOutputType: 'binary' }) as Uint8Array<ArrayBuffer>[]
-  const blob = new Blob([bytes], { type: 'audio/midi' })
+  return bytes
+}
+
+/** Turns ABC into a .mid file and starts a browser download. */
+export function downloadMidi(abc: string, title: string) {
+  const blob = new Blob([abcToMidi(abc)], { type: 'audio/midi' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
