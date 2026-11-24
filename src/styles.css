@@ -94,7 +94,7 @@
   /*
    * midishare's own tokens (not part of the scaffold).
    * Declared here so Tailwind generates classes for them: bg-roll, fill-note,
-   * bg-paper, font-mono and so on.
+   * font-mono and so on.
    */
   /* Fonts, loaded in index.html */
   --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -107,9 +107,6 @@
   --color-note: #d9ccb4;
   --color-key-white: #ebe5d9;
   --color-key-black: #1a1815;
-  /* Sheet music is drawn in ink on paper */
-  --color-paper: #f3eee4;
-  --color-paper-foreground: #1c1a17;
 
   /* Animations */
   --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;

@@ -59,7 +59,7 @@ Sound comes from abcjs's synth, which downloads piano samples from a third-party
 
 - **Theme:** `studio` (`src/themes.css`), selected in `index.html`. Warm near-black panels and one amber accent. Amber marks what is playing and the main action; a resting note is pale.
 - **Fonts:** IBM Plex Sans and IBM Plex Mono, loaded from Google Fonts in `index.html`. Mono is for the headline, small labels (`LEGEND` in `src/lib/utils.ts`), counters and ABC text.
-- **App tokens** (piano roll, note, keyboard, paper) are in the `@theme` block of `src/styles.css`, so classes like `bg-roll` and `fill-note` exist.
+- **App tokens** (piano roll, note, keyboard) are in the `@theme` block of `src/styles.css`, so classes like `bg-roll` and `fill-note` exist.
 - **Rules followed**, from docs.deep.space/design: no hardcoded colours in the landing files, kit primitives instead of browser defaults (`Select`, tooltips via `Tip`, `ConfirmModal`, `EmptyState`), `/* home pattern: … */` as the first line of `home.tsx`. The gate greps are in BUILD_LOG.md.
 
 ## 4. Decisions already made by Xuyan (don't reopen)
