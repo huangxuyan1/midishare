@@ -142,5 +142,6 @@ Add entries as they happen, newest at the bottom.
 | 2026-11-24 | verified | Local: tsc and eslint clean, 63 unit tests, 21 Playwright tests, build passing. A temporary test, deleted afterwards, compared file notes with the notes the imported ABC plays: Xuyan's song 356 of 356 with no differences (before: 5 bars differed), and 399 files from `midi_rl` (every 13th of 5184) with 0 differences and 0 invalid ABC. |
 | 2026-11-24 | deploy | Release rel_01M86CTPKEBJG8A1P56T420SQF from commit ca03f10, pushed, `dirty: false`. |
 | 2026-11-24 | verified | Live on midishare.app.space/new, nothing saved: imported a file built in the browser console with an F#4 held over a bar line followed by another F#4, and two chords held over the end of the first line. The ABC reads `z6 ^F2- | ^F2 ^F2 z4`, the four chord notes are in four voices with single-note ties, and the roll shows exactly the six notes of the file. No console errors. Not done: importing Xuyan's song itself on the live site; Xuyan can do that. |
+| 2026-11-24 | verified | Xuyan imported the song again on the live site after release rel_01M86CTPKEBJG8A1P56T420SQF and confirmed that bar 10 is right: the F natural is gone. |
 
 Types: `decision`, `agent`, `verified`, `changed-by-me`, `deploy`, `issue`.
