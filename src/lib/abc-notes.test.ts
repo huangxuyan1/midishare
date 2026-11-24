@@ -85,6 +85,53 @@ describe('notes -> ABC -> notes', () => {
     expect(roundTrip(wide, 'F').back).toEqual(wide)
   })
 
+  it('writes the accidental again after a note that is tied over a bar line', () => {
+    // An F# held over the bar line, then a new F# in the second bar.
+    const notes = [
+      { pitch: 66, start: 12, length: 8 },
+      { pitch: 66, start: 20, length: 4 },
+    ]
+    const { abc, back } = roundTrip(notes)
+    expect(abc).toContain('z6 ^F2- | ^F2 ^F2 z4 |]')
+    expect(back).toEqual(notes)
+    // Why: abcjs plays the tied note as one long note and never reads the "^" in bar 2,
+    // so a plain F after it is F natural (65).
+    expect(abcToNotes(`${HEAD}K:C\nz6 ^F2- | ^F2 F2 z4 |]`)[1].pitch).toBe(65)
+
+    // The other way round: after a tied-over F natural in D major, a plain F is F# again.
+    const naturalThenSharp = [
+      { pitch: 65, start: 12, length: 8 },
+      { pitch: 66, start: 20, length: 4 },
+    ]
+    expect(roundTrip(naturalThenSharp, 'D').back).toEqual(naturalThenSharp)
+  })
+
+  it('keeps chords that are held over the end of a line of text', () => {
+    // A line of text is four bars (64 steps). Two chords in two voices both sound across step 64.
+    const notes = sortNotes([
+      { pitch: 72, start: 60, length: 8 },
+      { pitch: 76, start: 60, length: 8 },
+      { pitch: 55, start: 58, length: 10 },
+      { pitch: 67, start: 58, length: 10 },
+    ])
+    const { abc, back } = roundTrip(notes)
+    expect(back).toEqual(notes)
+    // They are written as four single notes, not as two tied chords.
+    expect(abc).not.toContain('[')
+    // Why: abcjs remembers one tied chord at a time, so the second chord's tie is lost.
+    const tiedChords = `${HEAD}K:C\nV:1\nz6 [c-e-]2 |\nV:2\nz6 [G,-G-]2 |\nV:1\n[ce] z7 |]\nV:2\n[G,G] z7 |]`
+    expect(abcToNotes(tiedChords)).toHaveLength(6) // four notes, two of them cut in two
+
+    // A chord held over a bar line inside a line of text is still written as a chord.
+    const inside = sortNotes([
+      { pitch: 60, start: 12, length: 8 },
+      { pitch: 64, start: 12, length: 8 },
+    ])
+    const insideLine = roundTrip(inside)
+    expect(insideLine.abc).toContain('[C-E-]2 | [CE]2')
+    expect(insideLine.back).toEqual(inside)
+  })
+
   it('works in other meters', () => {
     const notes = [{ pitch: 60, start: 0, length: 12 }, { pitch: 62, start: 12, length: 6 }]
     expect(roundTrip(notes, 'C', '3/4').back).toEqual(notes)

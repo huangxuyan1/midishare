@@ -13,7 +13,16 @@
  *
  *   Why voices: abcjs only follows a tie inside a chord into a next chord
  *   that has the tied note in the same position, so "[CE-] E" plays the E
- *   twice. Tying whole chords to identical chords always works.
+ *   twice. Tying whole chords to identical chords works inside one line of
+ *   text. Two more abcjs habits shape the writer:
+ *   - It remembers only one tied chord at a time, across all voices. A chord
+ *     tied over a line break loses its tie when another voice has a tied chord
+ *     in between. So a note that crosses a line break is written on its own,
+ *     never in a chord.
+ *   - It plays a tied note as one long note and skips the pieces after the
+ *     first. An accidental written on such a piece (the "^F" after a tie over
+ *     a bar line) does not count for the rest of that bar, so the next F#
+ *     in the bar gets its own "^".
  *
  * Times are in grid steps of a 16th note.
  */
@@ -94,7 +103,7 @@ export function notesToAbcBody(notes: Note[], meter: string, unitLength: string,
   const end = Math.max(barSteps, ...notes.map((n) => n.start + n.length))
   const barCount = Math.ceil(end / barSteps)
 
-  const voices = splitIntoVoices(notes)
+  const voices = splitIntoVoices(notes, BARS_PER_LINE * barSteps)
   const voiceBars = voices.map((chords) => writeVoice(chords, barCount, barSteps, unitLength, key))
 
   // Four bars per line; the last bar line is the end mark |].
@@ -120,11 +129,16 @@ function voiceLine(index: number, chords: Chord[], first: boolean): string {
  * Groups notes into chords, then hands each chord to the first voice that is
  * free at that moment. Higher chords choose first, so the top line tends to
  * stay in V:1. Always returns at least one voice.
+ *
+ * `lineSteps` is the length of one line of text. A note that sounds across the
+ * end of a line stays out of chords (see the note on abcjs at the top).
  */
-function splitIntoVoices(notes: Note[]): Chord[][] {
+function splitIntoVoices(notes: Note[], lineSteps: number): Chord[][] {
   const byTime = new Map<string, Chord>()
   for (const n of notes) {
-    const key = `${n.start}+${n.length}`
+    const lastStep = n.start + n.length - 1
+    const crossesLine = Math.floor(n.start / lineSteps) !== Math.floor(lastStep / lineSteps)
+    const key = crossesLine ? `${n.start}+${n.length}+${n.pitch}` : `${n.start}+${n.length}`
     const chord = byTime.get(key) ?? { start: n.start, length: n.length, pitches: [] }
     chord.pitches.push(n.pitch)
     byTime.set(key, chord)
@@ -179,7 +193,10 @@ function writeVoice(chords: Chord[], barCount: number, barSteps: number, unitLen
         current.push(`z${length}`)
       } else {
         const tie = chord.start + chord.length > to ? '-' : '' // keeps sounding after this piece
-        const names = chord.pitches.map((p) => pitchText(p, keyAccidentals, barAccidentals, preferFlats))
+        // A later piece of a tied chord: abcjs ignores its accidentals, so write
+        // them for the reader but don't count them for the rest of the bar.
+        const accidentals = from > chord.start ? { ...barAccidentals } : barAccidentals
+        const names = chord.pitches.map((p) => pitchText(p, keyAccidentals, accidentals, preferFlats))
         if (names.length === 1) current.push(names[0] + length + tie) // e.g. c2-
         else current.push(`[${names.map((name) => name + tie).join('')}]${length}`) // e.g. [D-F-A-]2
       }

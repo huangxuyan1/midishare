@@ -66,7 +66,7 @@ Checks:
 ```bash
 npx tsc --noEmit
 npx eslint src
-npx vitest run             # 61 unit tests: schema permissions, ABC validation, ABC <-> notes, voices, note preview, MIDI import, undo history
+npx vitest run             # 63 unit tests: schema permissions, ABC validation, ABC <-> notes, voices, note preview, MIDI import, undo history
 npm run test:e2e           # 21 Playwright tests; the signed-in ones need two DeepSpace test accounts
 ```
 
