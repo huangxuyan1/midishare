@@ -1,0 +1,11 @@
+﻿Modular web module, local stopgap build (web-build ticket 03, decision 1a)
+Modular commit: 00bfcac93250c1791c3cb85f79ec72494610790a (main, clean checkout)
+Toolchain: emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.13 (e13ee988ce3d87a738dd8f3661d02223308c412a)
+Build: cmake --preset web; cmake --build --preset web; ctest --preset web (3/3 passed)
+Note: modular.mjs and modular.d.mts were copied with this machine's CRLF line endings.
+
+SHA-256:
+  modular.d.mts  1847 bytes  5987ced06928bd4621665c0ff8e7f3bbe0fd64898d90fe9d37ae8264bcbd97ba
+  modular.mjs  3576 bytes  69189c4d1fbcd33145c585d930c2023cba24300bae022d4f1f4206dab54a9137
+  modular_web.mjs  7698 bytes  091b4e3a87a6b4d48c3158eca9aec8a9e6c2ae866bebf487e2f930bf47adbf84
+  modular_web.wasm  109013 bytes  2e7964d1fefa901fea76dd53a2079557e80577f4feb7f0b03298109f9c1bba46

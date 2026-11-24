@@ -1,0 +1,3 @@
+# Built files from the Modular project. Keep them byte for byte: MANIFEST.txt records their SHA-256 values.
+* -text
+*.wasm binary
