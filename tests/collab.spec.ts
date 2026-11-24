@@ -250,6 +250,36 @@ test('the editor accepts a length that is not one written note value', async ({ 
   await expect(notes).toHaveCount(2)
 })
 
+test('the editor lines up voices that have different numbers of lines', async ({ users }) => {
+  const [a] = await users(1)
+  await a.page.goto('/new')
+  const notes = a.page.getByTestId('roll-note')
+  await expect(notes.first()).toBeVisible({ timeout: 15_000 })
+  const abc = a.page.getByLabel('ABC notation')
+  const error = a.page.getByTestId('abc-error')
+
+  // V:1 has one line of music and V:2 has two, so abcjs would play the second line in the wrong voice.
+  const exported =
+    'X:1\nT:Two voices\nM:4/4\nL:1/8\nK:C\n' +
+    'V:1\nZ6 | z2 A z5 |]\n' +
+    'V:2\nC8 | D8 | E8 | F8 |\nG8 | A8 | B8 | c8 |]'
+  await abc.fill(exported)
+  await expect(error).toContainText('different numbers of music lines')
+  await expect(a.page.getByRole('button', { name: 'Publish' })).toBeDisabled()
+
+  // The button rewrites the music: four bars per line, both voices in each group.
+  await a.page.getByTestId('line-up-voices').click()
+  await expect(error).toHaveCount(0)
+  await expect(abc).toHaveValue(/V:1\nZ \| Z \| Z \| Z \|\nV:2\nC8 \| D8 \| E8 \| F8 \|\nV:1\nZ \| Z \| z2 A z5 \| Z \|\]\nV:2\nG8/)
+  await expect(a.page.getByTestId('abc-notation').locator('svg')).toBeVisible()
+  await expect(notes).toHaveCount(9)
+
+  // One undo brings the pasted text back.
+  await a.page.keyboard.press('Control+z')
+  await expect(abc).toHaveValue(exported)
+  await expect(error).toBeVisible()
+})
+
 test('the clip page shows a read-only piano roll with a transport', async ({ users }) => {
   const [a] = await users(1)
   await a.page.goto('/home')

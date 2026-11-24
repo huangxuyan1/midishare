@@ -18,7 +18,7 @@ export type AbcCheck = { ok: true } | { ok: false; errors: string[] }
  * abcjs is forgiving: it rarely throws, it skips what it can't read and adds
  * a warning ("hello" parses as the single note "e" plus four warnings).
  * So "valid" here is strict: there is a K: (key) header line, abcjs finds
- * music, and it reports no warnings.
+ * music, it reports no warnings, and the voices are in step.
  *
  * One warning is allowed: "Duration not representable". The ABC standard
  * permits a length that isn't one written note value, such as z5 or F5 (five
@@ -27,6 +27,13 @@ export type AbcCheck = { ok: true } | { ok: false; errors: string[] }
  * the nearest shape.
  */
 const DRAWING_ONLY_WARNING = 'Duration not representable'
+
+/**
+ * The error for voices that abcjs would play out of step (see abc-voices.ts,
+ * which can fix it). Exported so the editor can offer that fix.
+ */
+export const VOICES_OUT_OF_STEP =
+  'The voices have different numbers of music lines. Voices are matched line by line, so the extra lines would play in the wrong voice. Give every voice the same number of lines.'
 
 export function checkAbc(abc: string): AbcCheck {
   if (abc.trim() === '') return { ok: false, errors: ['The ABC is empty.'] }
@@ -37,10 +44,24 @@ export function checkAbc(abc: string): AbcCheck {
     const warnings = (tune.warnings ?? [])
       .map((w) => w.replace(/<[^>]*>/g, '')) // abcjs warnings contain HTML markup; keep them as plain text
       .filter((w) => !w.includes(DRAWING_ONLY_WARNING))
-    return warnings.length > 0 ? { ok: false, errors: warnings } : { ok: true }
+    if (warnings.length > 0) return { ok: false, errors: warnings }
+    if (!voicesInStep(tune)) return { ok: false, errors: [VOICES_OUT_OF_STEP] }
+    return { ok: true }
   } catch (err) {
     return { ok: false, errors: [err instanceof Error ? err.message : String(err)] }
   }
+}
+
+/**
+ * abcjs turns each line of music into one "system" and matches voices by
+ * their position in it. The voices are in step when every system has the
+ * same voices: "1+1" for two staffs with one voice each, on every line.
+ */
+function voicesInStep(tune: abcjs.TuneObject): boolean {
+  const shapes = tune.lines
+    .filter((line) => line.staff !== undefined) // skips subtitle and text lines
+    .map((line) => line.staff!.map((staff) => staff.voices?.length ?? 0).join('+'))
+  return new Set(shapes).size <= 1
 }
 
 /** Turns ABC into a .mid file and starts a browser download. */

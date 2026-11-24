@@ -27,7 +27,7 @@ ABC is the one format everywhere: it is what's stored, what the AI writes, and w
 | Transport | Play, Stop, Reset, a bar.beat counter and a moving playhead. The space bar toggles play/stop. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
 | ABC ↔ notes | ABC → notes uses abcjs's own audio data, so the roll shows what you hear. Notes → ABC writes chords, ties and extra voices. | `src/lib/abc-notes.ts`, `src/lib/abc-headers.ts` |
 | AI assistant | `POST /api/abc/generate`: sign-in required, capped prompt, one model call through DeepSpace's AI proxy. The reply must parse as ABC; if it doesn't, the model gets one retry with the parser's errors. | `src/server/abc-routes.ts`, `src/components/AiAssist.tsx` |
-| Validation | ABC is valid when it has a `K:` line, abcjs finds music, and abcjs reports no warnings. One warning is allowed: a length that isn't one written note value (`z5`), which is legal ABC. The editor and the AI route use the same check. | `src/lib/abc.ts` |
+| Validation | ABC is valid when it has a `K:` line, abcjs finds music, and abcjs reports no warnings. One warning is allowed: a length that isn't one written note value (`z5`), which is legal ABC. Voices must also be in step: abcjs matches voices by text line, so voices with different numbers of music lines are refused, and the editor offers a "Line up voices" button that rewrites them four bars per line. The editor and the AI route use the same check. | `src/lib/abc.ts`, `src/lib/abc-voices.ts` |
 
 ## DeepSpace features used
 
@@ -65,8 +65,8 @@ Checks:
 ```bash
 npx tsc --noEmit
 npx eslint src
-npx vitest run             # 28 unit tests: schema permissions, ABC validation, ABC <-> notes
-npm run test:e2e           # 11 Playwright tests; the signed-in ones need two DeepSpace test accounts
+npx vitest run             # 48 unit tests: schema permissions, ABC validation, ABC <-> notes, voices, undo history
+npm run test:e2e           # 16 Playwright tests; the signed-in ones need two DeepSpace test accounts
 ```
 
 The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's direct server calls to read A's draft, or to edit, unpublish or delete A's clips, come back `READ DENIED`, `UPDATE DENIED` and `DELETE DENIED`.

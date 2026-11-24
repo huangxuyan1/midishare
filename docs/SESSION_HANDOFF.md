@@ -13,7 +13,7 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 - **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`. Everything is committed and pushed.
   - The DeepSpace source is GitHub. **Never run `deepspace push`.**
 - **Data:** 5 published example clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan. Xuyan had not listened to them when they were published.
-- **Tests:** 41 unit tests and 15 Playwright tests pass. Type-check and lint are clean.
+- **Tests:** 48 unit tests and 16 Playwright tests pass. Type-check and lint are clean.
   - `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`
   - `npx deepspace test run all --port 5187` (port 5173 belongs to another dev server; don't kill it)
 - **Test accounts:** "Test A" and "Test B" exist. The Playwright fixture signs them in from the CLI's saved credentials.
@@ -25,7 +25,7 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 2. **Xuyan, the submission note.** Edit [SUBMISSION.md](SUBMISSION.md) and resolve its two TODO lines (the by-ear check, and any code Xuyan changed by hand). Then submit in the portal: live URL, repository, note.
 3. **After any code change:** run the checks, commit, deploy, and confirm `dirty: false`. Verify the changed path on the live URL. Add rows to BUILD_LOG.md.
 4. **Done in session 3: the Studio UI.** Xuyan looked at it and approved it ("really, really cool"). Changes to colours, fonts or layout go through `src/themes.css` (the `studio` block), `src/styles.css` (app tokens) and the page files in the table below.
-5. **Open, waiting for Xuyan's decision (found in session 4):** abcjs lines voices up by text line. ABC whose voices have different numbers of music lines (the MIDI Clipboard bridge writes this when one voice is mostly rests) is accepted but plays and draws out of step. Details are in the last `issue` row of BUILD_LOG.md.
+5. **Done in session 4: ABC from the MIDI Clipboard bridge.** Lengths like `z5` are accepted, and voices with different numbers of lines get a "Line up voices" button in the editor. `lineUpVoices` returns null (no button, only the message) when the music has lyrics, comments, mid-tune fields or inline `[V:]` marks. The bridge itself is unchanged.
 6. **Optional polish**, only if Xuyan asks:
    - `/new` starts with an empty title while the example ABC has `T:Example`
    - in keys without flats (C, Am…), B♭ is spelled `^A`
@@ -49,9 +49,9 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 | Sheet music | abcjs rendering only; it has no player of its own. | `src/components/AbcView.tsx` |
 | ABC ↔ notes | ABC → notes via abcjs `setUpAudio`. Notes → ABC: same start and length form a chord; overlapping chords go into separate voices. Lengths are split into writable values and tied. | `src/lib/abc-notes.ts`, `src/lib/abc-headers.ts` (+ tests) |
 | AI assistant | `POST /api/abc/generate` (JWT required, prompt ≤500, currentAbc ≤5000). `createDeepSpaceAI(env,'anthropic',{authToken})`, `maxOutputTokens: 2000`. Validated with `checkAbc`, retried once with the errors, then 502. | `src/server/abc-routes.ts`, `src/components/AiAssist.tsx` |
-| Validation | `checkAbc`: requires a `K:` line, at least one parsed line, zero abcjs warnings. The "Duration not representable" warning is ignored: lengths like `z5` are legal ABC, play correctly, and the sheet draws the nearest shape. | `src/lib/abc.ts` |
+| Validation | `checkAbc`: requires a `K:` line, at least one parsed line, zero abcjs warnings. The "Duration not representable" warning is ignored: lengths like `z5` are legal ABC, play correctly, and the sheet draws the nearest shape. Voices must be in step: every line of music must have the same voices, because abcjs matches voices by text line. The editor offers "Line up voices" (`lineUpVoices`), which rewrites the music four bars per line with every voice in each group and pads short voices with `Z` bars. | `src/lib/abc.ts`, `src/lib/abc-voices.ts` (+ test) |
 | Record tools | `registerAgent` mounts the record tools under `/_deepspace/agent`. `deepspace agent invoke` and the two-user test use them. | `src/ai/agent.ts`, `src/ai/tools.ts` |
-| Tests | Unit: schema permissions, ABC validation, ABC ↔ notes, undo history. Playwright: smoke, API, two-user ownership, editor undo/redo, read-only roll. | `src/**/*.test.ts`, `tests/` |
+| Tests | Unit: schema permissions, ABC validation, ABC ↔ notes, undo history. Playwright: smoke, API, two-user ownership, editor undo/redo, odd lengths, lining up voices, read-only roll. | `src/**/*.test.ts`, `tests/` |
 
 Sound comes from abcjs's synth, which downloads piano samples from a third-party host at play time. See MODULAR_AUDIO_ENGINE.md.
 

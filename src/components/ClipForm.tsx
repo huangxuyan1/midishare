@@ -27,7 +27,8 @@ import { PianoRoll } from './PianoRoll'
 import { Tip } from './Tip'
 import { Transport } from './Transport'
 import { usePlayback } from '@/lib/use-playback'
-import { checkAbc } from '@/lib/abc'
+import { checkAbc, VOICES_OUT_OF_STEP } from '@/lib/abc'
+import { lineUpVoices } from '@/lib/abc-voices'
 import { readHeaders, setHeader } from '@/lib/abc-headers'
 import { abcToNotes, barLengthInSteps, writeNotesIntoAbc, type Note } from '@/lib/abc-notes'
 import { pushStep, redo, replacePresent, startHistory, undo } from '@/lib/history'
@@ -61,6 +62,10 @@ export function ClipForm({ initial, ready, onSave }: Props) {
   const [saving, setSaving] = useState<ClipStatus | null>(null) // which save button is busy
   const check = checkAbc(values.abc)
   const canSave = ready && saving === null && check.ok && values.title.trim() !== ''
+  // Voices that are out of step get a one-click fix, offered only when the rewrite passes the check.
+  const outOfStep = !check.ok && check.errors.includes(VOICES_OUT_OF_STEP)
+  const linedUp = outOfStep ? lineUpVoices(values.abc) : null
+  const canLineUp = linedUp !== null && checkAbc(linedUp).ok
   const headers = readHeaders(values.abc)
   const barSteps = barLengthInSteps(headers.meter)
   const playback = usePlayback(values.abc, barSteps)
@@ -238,6 +243,13 @@ export function ClipForm({ initial, ready, onSave }: Props) {
               {check.errors.map((e, i) => (
                 <li key={i}>{e}</li>
               ))}
+              {canLineUp && (
+                <li>
+                  <Button size="sm" variant="outline" onClick={() => setAbc(linedUp)} data-testid="line-up-voices">
+                    Line up voices
+                  </Button>
+                </li>
+              )}
             </ul>
           )}
         </section>

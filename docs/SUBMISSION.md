@@ -70,7 +70,7 @@ A coding agent (Claude Code) wrote most of the code. I made the product and arch
 - I found the dark-mode bug where the piano roll's keyboard colors were inverted. The agent fixed it.
 - **TODO (Xuyan):** press Play in the editor and on a clip page, and confirm that sound comes out, that it lines up with the playhead, and that the clip page's button returns to Play at the end. The agent could check the playhead's timing but cannot hear.
 - I reviewed the Studio design after the agent built it and kept it as it is.
-- I pasted a clip exported from Ableton by my own bridge, and the editor rejected it for a `z5` rest (five eighths). The ABC standard allows such a length, so I decided the site must accept it. The agent changed the validation; the sheet music draws the nearest note shape.
+- I pasted a clip exported from Ableton by my own bridge, and the editor rejected it for a `z5` rest (five eighths). The ABC standard allows such a length, so I decided the site must accept it. The agent changed the validation; the sheet music draws the nearest note shape. The same clip then played out of step, because abcjs matches voices by text line and my bridge had written one voice on fewer lines. I chose to fix that on the site too: the editor now refuses such ABC with an explanation and offers a "Line up voices" button that rewrites it.
 - **TODO (Xuyan):** list anything you changed in the code by hand.
 
 ## Not finished
