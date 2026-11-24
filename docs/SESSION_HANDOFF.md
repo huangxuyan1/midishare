@@ -9,11 +9,11 @@ For the next agent session. Read this first, then [CLAUDE.md](../CLAUDE.md) (wor
 The app is finished and submittable. What is left is Xuyan's own checking and the submission note.
 
 - **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
-  - Latest release: `rel_01M8678NXY2XME0E8JS6GS5PJ7`, commit `e4bcec9` (session 4), `dirty: false`. Every commit after it changes only docs.
+  - Latest release: `rel_01M867GYQXPXCC3MFRMTK3X117`, commit `2307409` (session 4), `dirty: false`. Every commit after it changes only docs.
 - **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`. Everything is committed and pushed.
   - The DeepSpace source is GitHub. **Never run `deepspace push`.**
 - **Data:** 5 published example clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan. Xuyan had not listened to them when they were published.
-- **Tests:** 50 unit tests and 19 Playwright tests pass. Type-check and lint are clean.
+- **Tests:** 50 unit tests and 20 Playwright tests pass. Type-check and lint are clean.
   - `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`
   - `npx deepspace test run all --port 5187` (port 5173 belongs to another dev server; don't kill it)
 - **Test accounts:** "Test A" and "Test B" exist. The Playwright fixture signs them in from the CLI's saved credentials.
@@ -44,13 +44,13 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 | Clip page | `/clips/:id`: transport and read-only piano roll in one panel, tabs for sheet music and ABC text, Copy ABC, Download .mid, Make a variation. Owner: Edit, Publish/Unpublish, Delete (the dialog names the clip). | `src/pages/(app)/clips/[id].tsx`, `src/components/ClipPlayer.tsx` |
 | Editor | `/new`, `/new?from=<id>` (variation), `/edit/:id`. The ABC text is the single source of truth. The piano roll, the title/tempo/meter/key fields and the sheet preview are views that write back to it. Each clip gets its own form instance (`key`). Undo/redo covers every field: the form's values live in a history, a burst of typing is one step, and Ctrl+Z / Ctrl+Y work next to the Undo and Redo buttons. | `src/components/ClipForm.tsx`, `MetadataFields.tsx`, `src/lib/history.ts` (+ test) |
 | Piano roll | SVG, 16th grid, C2–B6. Double-click adds a note; drag moves it; dragging either end resizes it (the cursor is a left-right arrow there; `zoneAt` decides); double-clicking a note deletes it. A sticky ruler of bar numbers on top: click or drag in it to move the playhead (`onSeek`, `onSeekEnd`). Note preview: a tag names the note under the pointer; pressing a note plays its pitch and dragging plays each new pitch (`playPreview`, one at a time, silent while the clip plays). Read-only when `onChange` is left out; names and sounds still work there. | `src/components/PianoRoll.tsx`, `src/lib/note-preview.ts` (+ test) |
-| Transport | Play / Stop (keeps the playhead) / Reset, `seek` / `endSeek` for dragging the playhead (a playing clip carries on from where it is dropped), bar.beat counter, amber playhead, sounding notes turn amber, follow-scroll. The space bar toggles play/stop. Used by the editor and the clip page. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
+| Transport | Play / Stop (keeps the playhead) / Reset, `seek` / `endSeek` for dragging the playhead (a playing clip carries on from where it is dropped), bar.beat counter, amber playhead, sounding notes turn amber. While playing, the playhead stays in the middle of the view and the roll slides under it (the effect in `PianoRoll.tsx` that sets `scrollLeft`); the view returns to the start with the playhead. The space bar toggles play/stop. Used by the editor and the clip page. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
 | Sheet music | abcjs rendering only; it has no player of its own. | `src/components/AbcView.tsx` |
 | ABC ↔ notes | ABC → notes via abcjs `setUpAudio`. Notes → ABC: same start and length form a chord; overlapping chords go into separate voices. Lengths are split into writable values and tied. | `src/lib/abc-notes.ts`, `src/lib/abc-headers.ts` (+ tests) |
 | AI assistant | `POST /api/abc/generate` (JWT required, prompt ≤500, currentAbc ≤5000). `createDeepSpaceAI(env,'anthropic',{authToken})`, `maxOutputTokens: 2000`. Validated with `checkAbc`, retried once with the errors, then 502. | `src/server/abc-routes.ts`, `src/components/AiAssist.tsx` |
 | Validation | `checkAbc`: requires a `K:` line, at least one parsed line, zero abcjs warnings. The "Duration not representable" warning is ignored: lengths like `z5` are legal ABC, play correctly, and the sheet draws the nearest shape. Voices must be in step: every line of music must have the same voices, because abcjs matches voices by text line. The editor offers "Line up voices" (`lineUpVoices`), which rewrites the music four bars per line with every voice in each group and pads short voices with `Z` bars. | `src/lib/abc.ts`, `src/lib/abc-voices.ts` (+ test) |
 | Record tools | `registerAgent` mounts the record tools under `/_deepspace/agent`. `deepspace agent invoke` and the two-user test use them. | `src/ai/agent.ts`, `src/ai/tools.ts` |
-| Tests | Unit: schema permissions, ABC validation, ABC ↔ notes, undo history. Playwright: smoke, API, two-user ownership, editor undo/redo, odd lengths, lining up voices, dragging the playhead, resizing from either end, note preview, read-only roll. | `src/**/*.test.ts`, `tests/` |
+| Tests | Unit: schema permissions, ABC validation, ABC ↔ notes, undo history. Playwright: smoke, API, two-user ownership, editor undo/redo, odd lengths, lining up voices, dragging the playhead, the centred playhead during playback, resizing from either end, note preview, read-only roll. | `src/**/*.test.ts`, `tests/` |
 
 Sound comes from abcjs's synth, which downloads piano samples from a third-party host at play time. See MODULAR_AUDIO_ENGINE.md.
 
