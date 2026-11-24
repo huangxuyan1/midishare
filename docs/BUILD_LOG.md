@@ -146,5 +146,7 @@ Add entries as they happen, newest at the bottom.
 | 2026-11-24 | decision | Xuyan: the sheet music has a whitish background on the dark site; invert it. This reverses the "ink on paper" choice from the Studio redesign. |
 | 2026-11-24 | agent | `AbcView` now uses the same surface as the piano roll and the ABC text box (`bg-roll`, a border, `text-foreground`) and the two paper tokens are removed from `src/styles.css`. No abcjs option was needed: abcjs draws every shape with `fill="currentColor"`, so the text color of the wrapper sets the color of the notes. |
 | 2026-11-24 | verified | Local dev server, signed out: mounted the real `AbcView` from the browser console with an 8-note clip. Computed background `rgb(21, 19, 17)`, note fill `rgb(236, 230, 218)`; staff, clef, notes, title and tempo all read light on dark in a screenshot. `tsc --noEmit` passes. Not checked: the editor and clip pages themselves (they need a sign-in or a saved clip), and the live site (not deployed). |
+| 2026-11-24 | deploy | Release rel_01M87CAZBV9XD2CYZ11X76XQZE from commit 9bbee55, pushed, `dirty: false`. `npm run validate` passed first (63 tests). |
+| 2026-11-24 | verified | Live on midishare.app.space/clips/example-waltz-g, signed in as Xuyan: the Sheet music tab shows the waltz light on dark (computed background `rgb(21, 19, 17)`, note fill `rgb(236, 230, 218)`), chord names and tempo included. No console errors. Not checked: the sheet music panel in the editor on /new. |
 
 Types: `decision`, `agent`, `verified`, `changed-by-me`, `deploy`, `issue`.
