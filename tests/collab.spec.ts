@@ -216,10 +216,11 @@ test('the editor undoes and redoes changes', async ({ users }) => {
   // Drag a note up two rows (12 px each) with the mouse: the ABC changes, and one undo puts it back.
   const abc = a.page.getByLabel('ABC notation')
   const abcBeforeDrag = await abc.inputValue()
+  // Grab it in the middle: its two ends resize it.
   const box = (await notes.first().boundingBox())!
-  await a.page.mouse.move(box.x + 4, box.y + box.height / 2)
+  await a.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await a.page.mouse.down()
-  await a.page.mouse.move(box.x + 4, box.y + box.height / 2 - 24, { steps: 4 })
+  await a.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 24, { steps: 4 })
   await a.page.mouse.up()
   await expect(abc).not.toHaveValue(abcBeforeDrag)
   await a.page.keyboard.press('Control+z')
@@ -325,6 +326,56 @@ test('dragging in the ruler moves the playhead', async ({ users }) => {
   // Moving the playhead is not an edit: the notes and the ABC are untouched.
   await expect(notes).toHaveCount(8)
   await expect(abc).toHaveValue(text)
+})
+
+test('a note is resized by dragging either end, and the cursor shows it', async ({ users }) => {
+  const [a] = await users(1)
+  await a.page.goto('/new')
+  const notes = a.page.getByTestId('roll-note')
+  await expect(notes.first()).toBeVisible({ timeout: 15_000 })
+
+  // A half rest, then a half note on middle C: the note covers steps 8 to 16.
+  const abc = a.page.getByLabel('ABC notation')
+  await abc.fill('X:1\nT:Resize\nM:4/4\nL:1/4\nK:C\nz2 C2 |]')
+  await expect(notes).toHaveCount(1)
+  const note = notes.first()
+  const before = (await note.boundingBox())!
+  const y = before.y + before.height / 2
+
+  // The cursor is a hand in the middle and a left-right arrow at both ends.
+  await a.page.mouse.move(before.x + before.width / 2, y)
+  await expect(note).toHaveCSS('cursor', 'grab')
+  await a.page.mouse.move(before.x + before.width - 2, y)
+  await expect(note).toHaveCSS('cursor', 'ew-resize')
+  await a.page.mouse.move(before.x + 2, y)
+  await expect(note).toHaveCSS('cursor', 'ew-resize')
+
+  // Drag the left end four steps (14 pixels each) to the left: the note starts earlier and ends where it did.
+  await a.page.mouse.down()
+  await a.page.mouse.move(before.x + 2 - 56, y, { steps: 4 })
+  await a.page.mouse.up()
+  await expect(abc).toHaveValue(/\nz C3 \|\]/)
+  const longer = (await note.boundingBox())!
+  expect(longer.x).toBeCloseTo(before.x - 56, 0)
+  expect(longer.x + longer.width).toBeCloseTo(before.x + before.width, 0)
+
+  // Dragging it to the right makes the note shorter, but never shorter than one step.
+  await a.page.mouse.move(longer.x + 2, y)
+  await a.page.mouse.down()
+  await a.page.mouse.move(longer.x + 2 + 400, y, { steps: 4 })
+  await a.page.mouse.up()
+  const shortest = (await note.boundingBox())!
+  expect(shortest.width).toBeCloseTo(14 - 2, 0)
+  expect(shortest.x + shortest.width).toBeCloseTo(before.x + before.width, 0)
+
+  // The right end still works: two steps longer.
+  await a.page.mouse.move(shortest.x + shortest.width - 2, y)
+  await a.page.mouse.down()
+  await a.page.mouse.move(shortest.x + shortest.width - 2 + 28, y, { steps: 4 })
+  await a.page.mouse.up()
+  const grown = (await note.boundingBox())!
+  expect(grown.x).toBeCloseTo(shortest.x, 0)
+  expect(grown.width).toBeCloseTo(3 * 14 - 2, 0)
 })
 
 /**

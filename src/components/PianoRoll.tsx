@@ -3,7 +3,8 @@
  *
  * - Double-click an empty spot to add a note.
  * - Drag a note to move it (left/right = time, up/down = pitch).
- * - Drag a note's right edge to make it longer or shorter.
+ * - Drag a note's left or right edge to make it longer or shorter. The pointer
+ *   turns into a left-right arrow there.
  * - Double-click a note to delete it.
  * - Click or drag in the ruler (the strip of bar numbers) to move the playhead.
  * - Point at a note to see its name. Press a note to hear it; while you drag
@@ -26,15 +27,18 @@ const ROW_H = 12 // pixels per semitone
 const KEYS_W = 36 // keyboard labels on the left
 const LOWEST = 36 // C2
 const HIGHEST = 95 // B6
-const EDGE = 6 // grab zone for resizing, at a note's right end
+const EDGE = 6 // grab zone for resizing, at each end of a note
 const RULER_H = 18 // the strip of bar numbers above the grid
 const LABEL_W = 30 // the tag that names the note under the pointer
 const LABEL_H = 14
 const BLACK_KEYS = [1, 3, 6, 8, 10]
 
+/** What a drag does, decided by where on the note it starts. */
+type Zone = 'move' | 'resize-left' | 'resize-right'
+
 type Drag = {
   index: number
-  mode: 'move' | 'resize'
+  mode: Zone
   /** Where the pointer went down. */
   x: number
   y: number
@@ -70,6 +74,7 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
   const seeking = useRef(false) // true while the pointer is held down in the ruler
   const [dragged, setDragged] = useState<{ index: number; note: Note } | null>(null) // what to draw
   const [hovered, setHovered] = useState<number | null>(null) // index of the note under the pointer
+  const [hoverZone, setHoverZone] = useState<Zone>('move') // which part of that note, for the cursor
   const [newLength, setNewLength] = useState(2) // new notes copy the last length you used
   const editable = onChange !== undefined
 
@@ -126,6 +131,22 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
     if (!playing) void playPreview(pitch)
   }
 
+  /** Which part of the note is at x: one of its ends, or the middle. */
+  function zoneAt(x: number, note: Note): Zone {
+    const left = note.start * STEP_W
+    const right = (note.start + note.length) * STEP_W
+    const edge = Math.min(EDGE, (right - left) / 3) // a short note keeps a middle to grab
+    if (x - left <= edge) return 'resize-left'
+    if (right - x <= edge) return 'resize-right'
+    return 'move'
+  }
+
+  function hoverNote(e: PointerEvent, index: number) {
+    if (drag.current) return // during a drag the cursor stays as it was when the drag began
+    setHovered(index)
+    setHoverZone(zoneAt(pointInGrid(e).x, notes[index]))
+  }
+
   function pressNote(e: PointerEvent, index: number) {
     if (e.button !== 0) return
     preview(notes[index].pitch)
@@ -135,13 +156,11 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
   function startDrag(e: PointerEvent, index: number) {
     const note = notes[index]
     const { x, y } = pointInGrid(e)
-    const noteRight = (note.start + note.length) * STEP_W
     // Capture on the note, so the drag keeps getting events when the pointer
     // leaves it. Not on the SVG: the browser sends click and double-click to
     // the capturing element, and the note's double-click (delete) would never fire.
     e.currentTarget.setPointerCapture(e.pointerId)
-    const mode = noteRight - x <= EDGE ? 'resize' : 'move'
-    drag.current = { index, mode, x, y, original: note, changed: note }
+    drag.current = { index, mode: zoneAt(x, note), x, y, original: note, changed: note }
     setDragged({ index, note })
   }
 
@@ -153,14 +172,20 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
     const dRows = Math.round((y - d.y) / ROW_H)
     const o = d.original
     const pitchBefore = d.changed.pitch
-    d.changed =
-      d.mode === 'move'
-        ? {
-            ...o,
-            start: Math.max(0, o.start + dSteps),
-            pitch: clamp(o.pitch - dRows, LOWEST, HIGHEST), // screen y grows downward
-          }
-        : { ...o, length: Math.max(1, o.length + dSteps) }
+    if (d.mode === 'move') {
+      d.changed = {
+        ...o,
+        start: Math.max(0, o.start + dSteps),
+        pitch: clamp(o.pitch - dRows, LOWEST, HIGHEST), // screen y grows downward
+      }
+    } else if (d.mode === 'resize-right') {
+      d.changed = { ...o, length: Math.max(1, o.length + dSteps) }
+    } else {
+      // The left edge moves and the end stays where it is.
+      const end = o.start + o.length
+      const start = clamp(o.start + dSteps, 0, end - 1)
+      d.changed = { ...o, start, length: end - start }
+    }
     if (d.changed.pitch !== pitchBefore) preview(d.changed.pitch) // hear each pitch the note passes
     setDragged({ index: d.index, note: d.changed })
   }
@@ -169,7 +194,7 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
     moveDrag(e) // count the final position even if no move event came before it
     const d = drag.current
     if (d) {
-      if (d.mode === 'resize') setNewLength(d.changed.length)
+      if (d.mode !== 'move') setNewLength(d.changed.length)
       if (JSON.stringify(d.changed) !== JSON.stringify(d.original)) {
         onChange?.(sortNotes(notes.map((n, i) => (i === d.index ? d.changed : n))))
       }
@@ -307,11 +332,12 @@ export function PianoRoll({ notes, barSteps, onChange, playhead, playing, onSeek
             rx={2}
             // A resting note is pale; it turns amber while it sounds.
             className={sounding ? 'fill-primary' : dragged?.index === i ? 'fill-note/70' : 'fill-note'}
-            style={{ cursor: editable ? 'grab' : 'pointer' }}
+            // A hand in the middle of a note, a left-right arrow at its ends.
+            style={{ cursor: !editable ? 'pointer' : hovered === i && hoverZone !== 'move' ? 'ew-resize' : 'grab' }}
             onPointerDown={(e) => pressNote(e, i)}
             // Move as well as enter: after a drag the pointer is still on the note, and no "enter" comes.
-            onPointerEnter={() => setHovered(i)}
-            onPointerMove={() => setHovered(i)}
+            onPointerEnter={(e) => hoverNote(e, i)}
+            onPointerMove={(e) => hoverNote(e, i)}
             onPointerLeave={() => setHovered(null)}
             onDoubleClick={
               editable
