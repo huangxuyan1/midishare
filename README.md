@@ -84,6 +84,10 @@ The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's 
 - **The AI assistant writes at most 16 bars** and spends the signed-in user's DeepSpace credits.
 - **The Ableton bridge** ([midi-clipboard](https://github.com/huangxuyan1/midi-clipboard), a separate project) is not part of this repo. It copies a MIDI clip in Ableton Live as ABC text and pastes ABC text back into Live, so a clip moves between Live and the site with one copy and one paste. That round trip was checked by hand, not by a test.
 
+## Credits
+
+- **Piano soundfont.** [`src/assets/piano/`](src/assets/piano) holds the "Yamaha Grand Piano" of FluidR3_GM by Frank Wen, under the MIT licence. The licence notice is `COPYING` in that folder, and the `.provenance.txt` file beside it records where the file came from and how it was made. It is for the planned Modular audio engine; nothing plays it yet.
+
 ## How it was built
 
 A coding agent (Claude Code) wrote most of the code under direction. The record of that is in [`docs/`](docs):
