@@ -14,6 +14,7 @@ midishare is a site for sharing short musical clips as ABC notation. ABC is the 
 - Browse and search published clips without signing in. Each card shows the clip as a small piano roll, and hovering runs a silent preview. Each clip page shows a piano roll and sheet music, plays in the browser with a moving playhead, downloads as a `.mid` file and copies as ABC text.
 - Signed-in users create clips in an editor where the ABC text, a piano roll, the title/tempo/meter/key fields and the sheet music all show the same clip. Editing any of them updates the others. Undo and redo cover every change.
 - A transport above the piano roll plays the clip with a moving playhead. Dragging in the roll's ruler of bar numbers moves the playhead, also while the clip plays. Pointing at a note shows its name, pressing it plays its pitch, and dragging it up or down plays each pitch it passes.
+- **Import MIDI** reads a `.mid` file in the browser and turns its notes into ABC: all tracks merged into one, snapped to 16th notes.
 - An AI assistant turns a prompt into ABC, or writes a variation of the current clip. The server only returns ABC that parses.
 - Clips are drafts until published. Only the owner can edit, unpublish or delete a clip.
 
@@ -41,14 +42,14 @@ midishare is a site for sharing short musical clips as ABC notation. ABC is the 
 **ABC as the only format.**
 
 - What it gives: one small text format that people can read, an LLM can write, a parser can validate, and a clipboard can carry. The same string is the database row, the AI output and the paste target.
-- What it costs: no velocity, no timing finer than a 16th note, and no `.mid` import.
+- What it costs: no velocity and no timing finer than a 16th note. An imported MIDI file keeps its notes but not its performance: triplets and swing are straightened.
 - A second cost came with the piano roll. Writing notes back to ABC is lossy: chord symbols become written-out notes, and overlapping notes move into separate voices. The clip plays the same, but the text is not the same text. I accepted this, and kept the ABC text as the single source of truth so there is never a second copy to keep in sync.
 
 ## What the agent did
 
 A coding agent (Claude Code) wrote most of the code. I made the product and architecture decisions and directed it. BUILD_LOG.md was kept during the build, not written afterwards.
 
-- **My decisions:** the idea and the ABC-everywhere design; a complete UI change in a "dark DAW" direction, after comparing the app with DeepSpace's examples; undo/redo; the app name and a public GitHub source; a one-shot AI generator instead of AI chat; AI first, then the piano roll; a single-track roll; title, meter, key and tempo as fields synced with the ABC headers; chord symbols shown as real notes in the roll; the DAW-style transport; a playhead that can be dragged; a note preview (name on hover, sound on press and while dragging, each new sound stopping the one before).
+- **My decisions:** the idea and the ABC-everywhere design; a complete UI change in a "dark DAW" direction, after comparing the app with DeepSpace's examples; undo/redo; the app name and a public GitHub source; a one-shot AI generator instead of AI chat; AI first, then the piano roll; a single-track roll; title, meter, key and tempo as fields synced with the ABC headers; chord symbols shown as real notes in the roll; the DAW-style transport; a playhead that can be dragged; a note preview (name on hover, sound on press and while dragging, each new sound stopping the one before); resizing a note from either end; a playhead that stays in the middle while the roll slides; MIDI import that treats the file as one track.
 - **The agent's work:** reading the DeepSpace skill and docs, the scaffold, the schema and permission rules, every page and component, the ABC ↔ notes converter, the AI route, the unit tests, the deploys, and the checks on the live site.
 - **Defaults the agent chose and I left in place:** the exact colours and the IBM Plex fonts of the Studio design; admins can delete any clip; tags are comma-separated text; a key change re-spells the notes and does not transpose; Stop keeps the playhead where it is.
 - **Bugs the agent found by testing the live site, then fixed:**
@@ -78,7 +79,7 @@ A coding agent (Claude Code) wrote most of the code. I made the product and arch
 ## Not finished
 
 - **The two-user ownership test ran on the local dev worker, not on the live URL.** It runs the same RecordRoom and schema as the deploy, but I did not repeat it with two accounts on midishare.app.space.
-- **No `.mid` import.** This is the next feature I would build: parse the file in the browser, quantize to the 16th grid, and reuse the notes → ABC writer.
+- **MIDI import is simple on purpose.** It merges all tracks, skips drums, keeps only the first tempo and time signature, sets the key to C, and cuts a file that is longer than one clip (5000 characters of ABC) at a bar line. I tested it with files the agent built and with 25 files from another project of mine, not with a wide range of files from other programs.
 - **The sound is abcjs's built-in synth, with piano samples from a third-party host.** I want to replace it with Modular, my own graph audio runtime, compiled to WebAssembly, with a soundfont instrument. I inspected what that needs and wrote the plan in `docs/MODULAR_AUDIO_ENGINE.md`; none of it is built.
 - **The Ableton bridge is a separate project, and its round trip is checked by hand only.** My `midi-clipboard` project now copies a clip in Ableton Live as ABC and pastes ABC back into Live. No automated test covers a clip going from Live to the site and back.
 - **Small edges:** `/new` starts with an empty title while the example ABC says `T:Example`; in keys without flats, B♭ is spelled `^A`; browse and search run in the browser, which is fine at this size.
