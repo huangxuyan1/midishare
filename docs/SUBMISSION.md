@@ -13,7 +13,7 @@ midishare is a site for sharing short musical clips as ABC notation. ABC is the 
 - It has its own design, a dark "studio" look with one amber accent, built after reading DeepSpace's design docs. The scaffold's placeholder theme is gone.
 - Browse and search published clips without signing in. Each card shows the clip as a small piano roll, and hovering runs a silent preview. Each clip page shows a piano roll and sheet music, plays in the browser with a moving playhead, downloads as a `.mid` file and copies as ABC text.
 - Signed-in users create clips in an editor where the ABC text, a piano roll, the title/tempo/meter/key fields and the sheet music all show the same clip. Editing any of them updates the others. Undo and redo cover every change.
-- A transport above the piano roll plays the clip with a moving playhead. Dragging in the roll's ruler of bar numbers moves the playhead, also while the clip plays.
+- A transport above the piano roll plays the clip with a moving playhead. Dragging in the roll's ruler of bar numbers moves the playhead, also while the clip plays. Pointing at a note shows its name, pressing it plays its pitch, and dragging it up or down plays each pitch it passes.
 - An AI assistant turns a prompt into ABC, or writes a variation of the current clip. The server only returns ABC that parses.
 - Clips are drafts until published. Only the owner can edit, unpublish or delete a clip.
 
@@ -48,7 +48,7 @@ midishare is a site for sharing short musical clips as ABC notation. ABC is the 
 
 A coding agent (Claude Code) wrote most of the code. I made the product and architecture decisions and directed it. BUILD_LOG.md was kept during the build, not written afterwards.
 
-- **My decisions:** the idea and the ABC-everywhere design; a complete UI change in a "dark DAW" direction, after comparing the app with DeepSpace's examples; undo/redo; the app name and a public GitHub source; a one-shot AI generator instead of AI chat; AI first, then the piano roll; a single-track roll; title, meter, key and tempo as fields synced with the ABC headers; chord symbols shown as real notes in the roll; the DAW-style transport; a playhead that can be dragged.
+- **My decisions:** the idea and the ABC-everywhere design; a complete UI change in a "dark DAW" direction, after comparing the app with DeepSpace's examples; undo/redo; the app name and a public GitHub source; a one-shot AI generator instead of AI chat; AI first, then the piano roll; a single-track roll; title, meter, key and tempo as fields synced with the ABC headers; chord symbols shown as real notes in the roll; the DAW-style transport; a playhead that can be dragged; a note preview (name on hover, sound on press and while dragging, each new sound stopping the one before).
 - **The agent's work:** reading the DeepSpace skill and docs, the scaffold, the schema and permission rules, every page and component, the ABC ↔ notes converter, the AI route, the unit tests, the deploys, and the checks on the live site.
 - **Defaults the agent chose and I left in place:** the exact colours and the IBM Plex fonts of the Studio design; admins can delete any clip; tags are comma-separated text; a key change re-spells the notes and does not transpose; Stop keeps the playhead where it is.
 - **Bugs the agent found by testing the live site, then fixed:**
