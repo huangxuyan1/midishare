@@ -75,7 +75,7 @@ The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's 
 ## Known limits
 
 - **ABC only.** No velocity and no timing finer than a 16th note.
-- **MIDI import keeps the notes, not the performance.** Starts and ends snap to 16th notes, so triplets and swing are straightened. Velocity, instruments and later tempo changes are dropped, notes outside C2–B6 move by octaves, and the key is set to C (choose another key to re-spell the notes). A file too long for one clip (5000 characters of ABC) is cut at a bar line, and the editor says how many bars it kept.
+- **MIDI import keeps the notes, not the performance.** Starts and ends snap to 16th notes, so triplets and swing are straightened. Velocity, instruments and later tempo changes are dropped, notes outside C2–B6 move by octaves, and the key is set to C (choose another key to re-spell the notes). A file too long for one clip (5000 characters of ABC) is cut at a bar line, and the editor says how many bars it kept. The import trusts the file's own beat grid: a free-time recording (played without a click, saved at the default 120 BPM) has no usable grid, so its rhythm comes out uneven.
 - **Editing in the piano roll rewrites the music lines.** Chord symbols such as `"Dm"` become written-out notes, and overlapping notes move into extra voices. The result plays the same but is not the same text.
 - **One track.** The roll has a single lane of notes, C2–B6.
 - **A key change re-spells the notes; it does not transpose.** In keys without flats, B♭ is written as `^A`.
