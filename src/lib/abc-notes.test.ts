@@ -116,6 +116,41 @@ describe('notes -> ABC -> notes', () => {
     expect(roundTrip(naturalThenSharp, 'D').back).toEqual(naturalThenSharp)
   })
 
+  it('writes a natural sign after a sharp note that is tied over a bar line', () => {
+    // An F# held over the bar line, then an F natural in the second bar.
+    const notes = [
+      { pitch: 66, start: 12, length: 8 },
+      { pitch: 65, start: 24, length: 4 },
+    ]
+    const { abc, back } = roundTrip(notes)
+    // Why "=F": abcjs skips the "^" in bar 2, so it would play a plain F as F natural.
+    // Other readers (the Ableton bridge) count that "^" for the rest of the bar and
+    // would read a plain F as F#. With the "=" both read F natural.
+    expect(abc).toContain('z6 ^F2- | ^F2 z2 =F2 z2 |]')
+    expect(back).toEqual(notes)
+
+    // The other way round in D major: a tied-over F natural, then F#.
+    const naturalThenSharp = [
+      { pitch: 65, start: 12, length: 8 },
+      { pitch: 66, start: 24, length: 4 },
+    ]
+    expect(roundTrip(naturalThenSharp, 'D').abc).toContain('z6 =F2- | =F2 z2 ^F2 z2 |]')
+  })
+
+  it('keeps G and G# out of the same chord', () => {
+    // Both are written on the letter G, and a tie is followed by letter, so in one
+    // tied chord a reader can't tell which G continues. They go in separate voices.
+    const notes = sortNotes([
+      { pitch: 67, start: 12, length: 8 },
+      { pitch: 68, start: 12, length: 8 },
+      { pitch: 72, start: 12, length: 8 },
+    ])
+    const { abc, back } = roundTrip(notes)
+    expect(abc).toContain('V:1\nz6 [G-c-]2 | [Gc]2 z6 |]')
+    expect(abc).toContain('V:2\nz6 ^G2- | ^G2 z6 |]')
+    expect(back).toEqual(notes)
+  })
+
   it('keeps chords that are held over the end of a line of text', () => {
     // A line of text is four bars (64 steps). Two chords in two voices both sound across step 64.
     const notes = sortNotes([

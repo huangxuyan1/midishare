@@ -122,7 +122,7 @@ export function notesToAbcBody(notes: Note[], meter: string, unitLength: string,
   const end = Math.max(barSteps, ...notes.map((n) => n.start + n.length))
   const barCount = Math.ceil(end / barSteps)
 
-  const voices = splitIntoVoices(notes, BARS_PER_LINE * barSteps)
+  const voices = splitIntoVoices(notes, BARS_PER_LINE * barSteps, prefersFlats(key))
   const voiceBars = voices.map((chords) => writeVoice(chords, barCount, barSteps, unitLength, key))
 
   // Four bars per line; the last bar line is the end mark |].
@@ -151,13 +151,20 @@ function voiceLine(index: number, chords: Chord[], first: boolean): string {
  *
  * `lineSteps` is the length of one line of text. A note that sounds across the
  * end of a line stays out of chords (see the note on abcjs at the top).
+ *
+ * Two notes written on the same letter (G and G#) also stay out of one chord:
+ * a tie is followed by letter, so in "[G-^G-]2 [G^G]" a reader can't tell
+ * which G continues.
  */
-function splitIntoVoices(notes: Note[], lineSteps: number): Chord[][] {
+function splitIntoVoices(notes: Note[], lineSteps: number, preferFlats: boolean): Chord[][] {
+  const letter = (pitch: number) => spell(pitch, preferFlats).letter + octaveOf(pitch)
   const byTime = new Map<string, Chord>()
   for (const n of notes) {
     const lastStep = n.start + n.length - 1
     const crossesLine = Math.floor(n.start / lineSteps) !== Math.floor(lastStep / lineSteps)
-    const key = crossesLine ? `${n.start}+${n.length}+${n.pitch}` : `${n.start}+${n.length}`
+    let key = `${n.start}+${n.length}`
+    const sharesLetter = byTime.get(key)?.pitches.some((p) => letter(p) === letter(n.pitch))
+    if (crossesLine || sharesLetter) key += `+${n.pitch}` // a chord of its own
     const chord = byTime.get(key) ?? { start: n.start, length: n.length, pitches: [] }
     chord.pitches.push(n.pitch)
     byTime.set(key, chord)
@@ -183,7 +190,7 @@ function splitIntoVoices(notes: Note[], lineSteps: number): Chord[][] {
 function writeVoice(chords: Chord[], barCount: number, barSteps: number, unitLength: string, key: string): string[] {
   const unitSteps = unitLengthInSteps(unitLength)
   const keyAccidentals = keySignature(key)
-  const preferFlats = Object.values(keyAccidentals).some((a) => a < 0)
+  const preferFlats = prefersFlats(key)
 
   // Cut points: every chord start and end, and every bar line.
   const cuts = new Set<number>()
@@ -198,6 +205,11 @@ function writeVoice(chords: Chord[], barCount: number, barSteps: number, unitLen
   let current: string[] = []
   // Accidentals written earlier in the bar, keyed by letter + octave ("F4").
   let barAccidentals: Record<string, number> = {}
+  // Notes ("F4") whose accidental in this bar was written on a later piece of
+  // a tied chord. abcjs skips that accidental and other readers (the Ableton
+  // bridge) count it, so the next such note in the bar always gets its own
+  // sign, "=" included. Then every reader gets the same pitch.
+  let unclear = new Set<string>()
 
   for (let i = 0; i < times.length - 1; i++) {
     const chord = chords.find((c) => c.start <= times[i] && c.start + c.length > times[i])
@@ -214,8 +226,14 @@ function writeVoice(chords: Chord[], barCount: number, barSteps: number, unitLen
         const tie = chord.start + chord.length > to ? '-' : '' // keeps sounding after this piece
         // A later piece of a tied chord: abcjs ignores its accidentals, so write
         // them for the reader but don't count them for the rest of the bar.
-        const accidentals = from > chord.start ? { ...barAccidentals } : barAccidentals
-        const names = chord.pitches.map((p) => pitchText(p, keyAccidentals, accidentals, preferFlats))
+        const laterPiece = from > chord.start
+        const accidentals = laterPiece ? { ...barAccidentals } : barAccidentals
+        const names = chord.pitches.map((p) => pitchText(p, keyAccidentals, accidentals, preferFlats, unclear))
+        if (laterPiece) {
+          for (const note of Object.keys(accidentals)) {
+            if (accidentals[note] !== barAccidentals[note]) unclear.add(note) // a sign was written here
+          }
+        }
         if (names.length === 1) current.push(names[0] + length + tie) // e.g. c2-
         else current.push(`[${names.map((name) => name + tie).join('')}]${length}`) // e.g. [D-F-A-]2
       }
@@ -226,6 +244,7 @@ function writeVoice(chords: Chord[], barCount: number, barSteps: number, unitLen
       bars.push(current.join(' '))
       current = []
       barAccidentals = {}
+      unclear = new Set()
     }
   }
   return bars
@@ -240,30 +259,46 @@ const SHARP_ACC = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0]
 const FLAT_NAMES = ['C', 'D', 'D', 'E', 'E', 'F', 'G', 'G', 'A', 'A', 'B', 'B']
 const FLAT_ACC = [0, -1, 0, -1, 0, 0, -1, 0, -1, 0, -1, 0]
 
+/** Flat keys spell black keys as flats (Bb), other keys as sharps (A#). */
+function prefersFlats(key: string): boolean {
+  return Object.values(keySignature(key)).some((a) => a < 0)
+}
+
+/** MIDI pitch -> its letter and accidental (1 sharp, -1 flat, 0 natural). 61 -> C sharp, or D flat in a flat key. */
+function spell(pitch: number, preferFlats: boolean): { letter: string; accidental: number } {
+  const pc = pitch % 12
+  return preferFlats
+    ? { letter: FLAT_NAMES[pc], accidental: FLAT_ACC[pc] }
+    : { letter: SHARP_NAMES[pc], accidental: SHARP_ACC[pc] }
+}
+
+/** ABC octaves: octave 4 is C (MIDI 60) .. B, octave 5 is c .. b one octave up. */
+function octaveOf(pitch: number): number {
+  return Math.floor(pitch / 12) - 1
+}
+
 /**
  * MIDI pitch -> ABC note, e.g. 60 -> "C", 61 -> "^C", 72 -> "c", 48 -> "C,".
  * Writes an accidental only when the key signature (or an earlier accidental
- * in the same bar) doesn't already give the right pitch.
+ * in the same bar) doesn't already give the right pitch, or when the note is
+ * in `unclear` (see writeVoice).
  */
 function pitchText(
   pitch: number,
   keyAccidentals: Record<string, number>,
   barAccidentals: Record<string, number>,
   preferFlats: boolean,
+  unclear: Set<string>,
 ): string {
-  const pc = pitch % 12
-  // Flat keys spell black keys as flats (Bb), other keys as sharps (A#).
-  const letter = preferFlats ? FLAT_NAMES[pc] : SHARP_NAMES[pc]
-  const accidental = preferFlats ? FLAT_ACC[pc] : SHARP_ACC[pc]
-
-  // ABC octaves: C (MIDI 60) .. B, then c .. b one octave up.
-  const octave = Math.floor(pitch / 12) - 1
+  const { letter, accidental } = spell(pitch, preferFlats)
+  const octave = octaveOf(pitch)
   const barKey = letter + octave
   const inEffect = barAccidentals[barKey] ?? keyAccidentals[letter] ?? 0
   let prefix = ''
-  if (accidental !== inEffect) {
+  if (accidental !== inEffect || unclear.has(barKey)) {
     prefix = accidental === 1 ? '^' : accidental === -1 ? '_' : '='
     barAccidentals[barKey] = accidental
+    unclear.delete(barKey)
   }
 
   let name = octave >= 5 ? letter.toLowerCase() : letter
