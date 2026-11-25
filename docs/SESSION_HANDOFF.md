@@ -9,7 +9,7 @@ For the next agent session. Read this first, then [CLAUDE.md](../CLAUDE.md) (wor
 The app is finished and submittable. What is left is Xuyan's own checking and the submission note.
 
 - **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
-  - Latest release: `rel_01M88504PZTN99QY9WF1F95DF3`, commit `5d0757d` (session 4, the Modular sound engine with the `.wasm` loading fix), `dirty: false`. Every commit after it changes only docs.
+  - Latest release: `rel_01M8886Y4Y1Y7NJ8H9A8ZKMJ38`, commit `543baf1` (the `/ableton` page about MIDI Clipboard and two ABC writer fixes), `dirty: false`. Every commit after it changes only docs.
   - The platform serves `.wasm` files as `application/octet-stream`. Left alone, the browser logs "wasm streaming compile failed" on the first sound and loads Modular from the downloaded bytes instead. `src/lib/modular-piano.ts` avoids that: it downloads the file itself and hands Modular a copy labelled `application/wasm`, so the console stays clean. The first Modular release, rel_01M883MT4CWNZ2X22AFQRB19Z5, did not have this fix and showed the two errors; the latest release has it.
 - **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`. Everything is committed and pushed.
   - The DeepSpace source is GitHub. **Never run `deepspace push`.**
