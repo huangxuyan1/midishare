@@ -1,6 +1,7 @@
 /**
  * /clips/:id - one clip: a read-only piano roll with play/stop, the sheet
  * music or the ABC text, Download .mid, Copy ABC.
+ * Under the title: who made it, linked to their profile.
  * Public: signed-out visitors can open published clips. The owner also gets
  * Edit, Publish/Unpublish and Delete. The server enforces who may do those
  * (update/delete: 'own'); hiding the buttons for others is only UX.
@@ -14,6 +15,7 @@ import { ClipPlayer } from '@/components/ClipPlayer'
 import { downloadMidi, parseTags } from '@/lib/abc'
 import { readHeaders } from '@/lib/abc-headers'
 import { useClip } from '@/lib/clips'
+import { ANONYMOUS, useProfiles } from '@/lib/profiles'
 import { LEGEND } from '@/lib/utils'
 import type { Clip } from '@/schemas/clips-schema'
 
@@ -24,6 +26,7 @@ export default function ClipPage() {
   const { success, error } = useToast()
   const { clip, status } = useClip(id)
   const { ready, putConfirmed, removeConfirmed } = useMutations<Clip>('clips')
+  const { nameOf } = useProfiles()
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   if (status === 'loading') {
@@ -48,6 +51,7 @@ export default function ClipPage() {
   const { title, description, tags, abc, status: clipStatus, source } = clip.data
   const headers = readHeaders(abc)
   const isOwner = clip.createdBy === userId
+  const author = nameOf(clip.createdBy)
 
   async function copyAbc() {
     await navigator.clipboard.writeText(abc)
@@ -86,6 +90,17 @@ export default function ClipPage() {
             {clipStatus === 'draft' && <Badge variant="secondary">Draft</Badge>}
             {source === 'ai' && <Badge variant="outline">AI-generated</Badge>}
           </div>
+          {/* The creator's display name links to their profile. No profile: Anonymous, and no link. */}
+          <p className="text-sm text-muted-foreground" data-testid="clip-author">
+            by{' '}
+            {author ? (
+              <Link to={`/u/${clip.createdBy}`} className="text-foreground underline underline-offset-4 hover:text-primary">
+                {author}
+              </Link>
+            ) : (
+              ANONYMOUS
+            )}
+          </p>
           <p className="font-mono text-xs text-muted-foreground">
             {headers.key} · {headers.meter} · {headers.tempo} BPM · Updated {new Date(clip.updatedAt).toLocaleString()}
           </p>

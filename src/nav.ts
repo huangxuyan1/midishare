@@ -17,6 +17,8 @@ export interface NavItem {
 
 export const nav: NavItem[] = [
   { path: '/home', label: 'Clips' },
+  // Your own drafts and published clips. Needs an account.
+  { path: '/me', label: 'My clips', roles: ['viewer', 'member', 'admin'] },
   // How to paste a clip into Ableton Live with MIDI Clipboard. Open to everyone.
   { path: '/ableton', label: 'Ableton' },
   // Settings needs an account, so signed-out visitors don't see the link.

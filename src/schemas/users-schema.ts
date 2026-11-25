@@ -1,8 +1,18 @@
+/**
+ * Users - the account rows the platform keeps: email, account name, picture, role.
+ *
+ * A user reads only their own row. `roster: 'read-policy'` applies the same
+ * rule to the list of users the server sends to every signed-in browser.
+ * Without it, that list carries every user's account name and picture, and
+ * anyone could match a clip's `createdBy` id to a name. The name a user wants
+ * to show is in the profiles collection instead (see profiles-schema.ts).
+ */
 import { USERS_COLUMNS, type CollectionSchema } from 'deepspace/schema'
 
 export const usersSchema: CollectionSchema = {
   name: 'users',
   columns: [...USERS_COLUMNS],
+  roster: 'read-policy',
   permissions: {
     viewer: { read: 'own', create: false, update: 'own', delete: false },
     member: { read: 'own', create: false, update: 'own', delete: false },

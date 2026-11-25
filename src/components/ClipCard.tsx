@@ -1,7 +1,11 @@
 /**
  * One clip in the library grid: a small piano roll of its notes, the title,
- * its key / meter / tempo, and its tags. Hovering the card runs a playhead
- * across the roll at the clip's real speed (no sound).
+ * who made it, its key / meter / tempo, and its tags. Hovering the card runs a
+ * playhead across the roll at the clip's real speed (no sound).
+ *
+ * `author` is the creator's display name, or null when they have none. The
+ * page looks it up (useProfiles) and passes it in. The whole card is one link
+ * to the clip, so the name here is plain text; the clip page links to the profile.
  */
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
@@ -11,9 +15,10 @@ import { MiniRoll } from './MiniRoll'
 import { checkAbc, parseTags } from '@/lib/abc'
 import { readHeaders } from '@/lib/abc-headers'
 import { abcToNotes, barLengthInSteps } from '@/lib/abc-notes'
+import { ANONYMOUS } from '@/lib/profiles'
 import type { Clip } from '@/schemas/clips-schema'
 
-export function ClipCard({ clip }: { clip: RecordData<Clip> }) {
+export function ClipCard({ clip, author }: { clip: RecordData<Clip>; author: string | null }) {
   const { title, abc, tags, status } = clip.data
   const headers = readHeaders(abc)
   const barSteps = barLengthInSteps(headers.meter)
@@ -37,6 +42,9 @@ export function ClipCard({ clip }: { clip: RecordData<Clip> }) {
           <h3 className="font-medium leading-snug">{title}</h3>
           {status === 'draft' && <Badge variant="secondary">Draft</Badge>}
         </div>
+        <p className="text-sm text-muted-foreground" data-testid="card-author">
+          by {author ?? ANONYMOUS}
+        </p>
         <p className="font-mono text-xs text-muted-foreground">
           {headers.key} · {headers.meter} · {headers.tempo} BPM · {bars} {bars === 1 ? 'bar' : 'bars'}
         </p>

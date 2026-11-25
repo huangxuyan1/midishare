@@ -183,6 +183,130 @@ test("another user cannot see A's draft, or edit or delete A's clips", async ({ 
   }
 })
 
+// ── Display names: A is the publisher, B is a reader ────────────────────────
+
+test('a display name shows on the clips; without one the clip is anonymous', async ({ users }) => {
+  test.setTimeout(90_000)
+  const [a, b] = await users(2)
+
+  // Every list of users the server sends B's browser, to check below that A is not in it.
+  const userListsSentToB: string[] = []
+  b.page.on('websocket', (socket) =>
+    socket.on('framereceived', (frame) => {
+      const text = String(frame.payload)
+      if (text.includes('"user.list"')) userListsSentToB.push(text)
+    }),
+  )
+
+  for (const user of [a, b]) {
+    await user.page.goto('/home')
+    await expect(user.page.getByTestId('nav-user-name')).toHaveText(/\S/, { timeout: 15_000 })
+  }
+
+  const stamp = Date.now()
+  const clipId = `test-author-${stamp}`
+  const clipTitle = `__test-${stamp}__ author`
+  const name = `Tester ${stamp}`
+  let aId = ''
+
+  /** A's profile records, as the server lists them to anyone. */
+  async function profilesOfA() {
+    const listed = await callTool(b, 'records_query', { collection: 'profiles' })
+    expect(listed.ok, listed.error).toBe(true)
+    return listed.result.data.records.filter((r: { createdBy: string }) => r.createdBy === aId)
+  }
+
+  async function removeProfilesOfA() {
+    for (const profile of await profilesOfA()) {
+      await callTool(a, 'records_delete', { collection: 'profiles', recordId: profile.recordId })
+    }
+  }
+
+  try {
+    // A publishes a clip. The record's `createdBy` is A's user id.
+    const created = await callTool(a, 'records_create', {
+      collection: 'clips',
+      recordId: clipId,
+      data: { title: clipTitle, abc: EXAMPLE_ABC, status: 'published' },
+    })
+    expect(created.ok, created.error).toBe(true)
+    const read = await callTool(b, 'records_get', { collection: 'clips', recordId: clipId })
+    aId = read.result.data.record.createdBy
+    expect(aId).toMatch(/\S/)
+    await removeProfilesOfA() // a name left by an earlier run
+
+    // Without a display name, B reads "by Anonymous", and there is no link to a profile.
+    await b.page.goto(`/clips/${clipId}`)
+    const author = b.page.getByTestId('clip-author')
+    await expect(author).toHaveText(`by Anonymous`, { timeout: 15_000 })
+    await expect(author.getByRole('link')).toHaveCount(0)
+    await b.page.goto(`/u/${aId}`)
+    await expect(b.page.getByText('No public profile')).toBeVisible({ timeout: 15_000 })
+    await expect(b.page.getByText(clipTitle)).toHaveCount(0)
+
+    // A sets a display name in Settings.
+    await a.page.goto('/settings')
+    const field = a.page.getByLabel('Display name')
+    const save = a.page.getByRole('button', { name: 'Save' })
+    await expect(field).toBeEnabled({ timeout: 15_000 })
+    await field.fill(name)
+    await save.click()
+    await expect(a.page.getByText('Name saved')).toBeVisible({ timeout: 15_000 })
+    expect(await profilesOfA()).toHaveLength(1)
+
+    // B sees the name on the clip page, on the library card, and on A's page.
+    await b.page.goto(`/clips/${clipId}`)
+    await expect(author).toHaveText(`by ${name}`, { timeout: 15_000 })
+    await b.page.goto(`/home?q=${encodeURIComponent(clipTitle)}`)
+    const card = b.page.getByTestId('clip-row').filter({ hasText: clipTitle })
+    await expect(card.getByTestId('card-author')).toHaveText(`by ${name}`, { timeout: 15_000 })
+    await card.click()
+    await author.getByRole('link', { name }).click()
+    await expect(b.page).toHaveURL(new RegExp(`/u/${aId}$`))
+    await expect(b.page.getByTestId('profile-name')).toHaveText(name, { timeout: 15_000 })
+    await expect(b.page.getByText(clipTitle)).toBeVisible()
+    await expect(b.page.getByTestId('profile-drafts')).toHaveCount(0)
+
+    // Server: B cannot change or delete A's profile.
+    const [profile] = await profilesOfA()
+    const edit = await callTool(b, 'records_update', {
+      collection: 'profiles',
+      recordId: profile.recordId,
+      data: { displayName: 'changed by B' },
+    })
+    expect(edit.ok).toBe(false)
+    expect(edit.error).toContain('UPDATE DENIED')
+    const remove = await callTool(b, 'records_delete', { collection: 'profiles', recordId: profile.recordId })
+    expect(remove.ok).toBe(false)
+    expect(remove.error).toContain('DELETE DENIED')
+
+    // Server: B cannot read A's account row, and no list of users sent to B has A in it.
+    const account = await callTool(b, 'records_get', { collection: 'users', recordId: aId })
+    expect(account.ok).toBe(false)
+    expect(userListsSentToB.length).toBeGreaterThan(0)
+    expect(userListsSentToB.join('\n')).not.toContain(aId)
+
+    // A's own page has the name and the clip.
+    await a.page.goto('/me')
+    await expect(a.page.getByTestId('profile-name')).toHaveText(name, { timeout: 15_000 })
+    await expect(a.page.getByText(clipTitle)).toBeVisible()
+
+    // A empties the field: the clip is anonymous again, and A's page is gone for B.
+    await a.page.goto('/settings')
+    await expect(field).toHaveValue(name, { timeout: 15_000 })
+    await field.fill('')
+    await save.click()
+    await expect(a.page.getByText('Name removed')).toBeVisible({ timeout: 15_000 })
+    expect(await profilesOfA()).toHaveLength(0)
+    await expect(b.page.getByText('No public profile')).toBeVisible({ timeout: 15_000 })
+    await b.page.goto(`/clips/${clipId}`)
+    await expect(author).toHaveText('by Anonymous', { timeout: 15_000 })
+  } finally {
+    await callTool(a, 'records_delete', { collection: 'clips', recordId: clipId }).catch(() => {})
+    if (aId) await removeProfilesOfA().catch(() => {})
+  }
+})
+
 test('the editor undoes and redoes changes', async ({ users }) => {
   const [a] = await users(1)
   await a.page.goto('/new')

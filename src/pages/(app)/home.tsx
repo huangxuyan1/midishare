@@ -1,10 +1,12 @@
 /* home pattern: search-first — a search box over the grid of clip cards */
 /**
- * /home - the clip library: published clips, newest first, with search.
- * Signed-in users also see their own clips (including drafts) in "My clips".
+ * /home - the clip library: everyone's published clips, newest first, with
+ * search. Each card says who made the clip (their display name, or Anonymous).
+ * Your own published clips are in the same list as everyone else's; your
+ * drafts are on your own page, /me.
  * Signed-out visitors see the same library, plus a line inviting them to sign in.
- * The server only sends what the caller may read, so filtering here is just
- * for display, not for privacy.
+ * The server also sends you your own drafts, so the status filter below keeps
+ * them out of this list. It is for display, not for privacy.
  */
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -13,6 +15,7 @@ import { Music } from 'lucide-react'
 import { Badge, Button, EmptyState, SearchInput } from '@/components/ui'
 import { ClipCard } from '@/components/ClipCard'
 import { parseTags } from '@/lib/abc'
+import { useProfiles } from '@/lib/profiles'
 import { LEGEND } from '@/lib/utils'
 import type { Clip } from '@/schemas/clips-schema'
 
@@ -20,14 +23,14 @@ const GRID = 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const { userId, isSignedIn } = useAuth()
+  const { isSignedIn } = useAuth()
   const [params, setParams] = useSearchParams()
   const [showSignIn, setShowSignIn] = useState(false)
   const search = params.get('q') ?? ''
   const tag = params.get('tag') ?? ''
   const { records, status } = useQuery<Clip>('clips', { orderBy: 'createdAt', orderDir: 'desc' })
+  const { nameOf } = useProfiles()
 
-  const myClips = records.filter((r) => r.createdBy === userId)
   const published = records.filter((r) => r.data.status === 'published' && matches(r, search, tag))
   const filtering = search !== '' || tag !== ''
 
@@ -53,26 +56,6 @@ export default function HomePage() {
           <Button size="sm" variant="outline" onClick={() => setShowSignIn(true)}>
             Sign in
           </Button>
-        </section>
-      )}
-
-      {isSignedIn && status !== 'loading' && (
-        <section className="flex flex-col gap-4">
-          <h2 className={LEGEND}>My clips · {myClips.length}</h2>
-          {myClips.length === 0 ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border px-4 py-3">
-              <p className="text-sm text-muted-foreground">You have no clips yet. Start from the example, or ask the AI.</p>
-              <Button size="sm" onClick={() => navigate('/new')}>
-                New clip
-              </Button>
-            </div>
-          ) : (
-            <div className={GRID}>
-              {myClips.map((clip) => (
-                <ClipCard key={clip.recordId} clip={clip} />
-              ))}
-            </div>
-          )}
         </section>
       )}
 
@@ -121,7 +104,7 @@ export default function HomePage() {
         ) : (
           <div className={GRID}>
             {published.map((clip) => (
-              <ClipCard key={clip.recordId} clip={clip} />
+              <ClipCard key={clip.recordId} clip={clip} author={nameOf(clip.createdBy)} />
             ))}
           </div>
         )}
