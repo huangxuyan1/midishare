@@ -9,11 +9,12 @@ For the next agent session. Read this first, then [CLAUDE.md](../CLAUDE.md) (wor
 The app is finished and submittable. What is left is Xuyan's own checking and the submission note.
 
 - **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
-  - Latest release: `rel_01M86CTPKEBJG8A1P56T420SQF`, commit `ca03f10` (session 4), `dirty: false`. Every commit after it changes only docs.
+  - Latest release: `rel_01M883MT4CWNZ2X22AFQRB19Z5`, commit `40a7b6b` (session 4, the Modular sound engine), `dirty: false`. Every commit after it changes only docs.
+  - The platform serves `.wasm` files as `application/octet-stream`. The browser therefore logs "wasm streaming compile failed" on the first sound and loads Modular from the downloaded bytes instead. It works; the two console errors are expected.
 - **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`. Everything is committed and pushed.
   - The DeepSpace source is GitHub. **Never run `deepspace push`.**
 - **Data:** 5 published example clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan. Xuyan had not listened to them when they were published.
-- **Tests:** 63 unit tests and 21 Playwright tests pass. Type-check and lint are clean.
+- **Tests:** 88 unit tests and 23 Playwright tests pass. Type-check and lint are clean.
   - `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`
   - `npx deepspace test run all --port 5187` (port 5173 belongs to another dev server; don't kill it)
 - **Test accounts:** "Test A" and "Test B" exist. The Playwright fixture signs them in from the CLI's saved credentials.

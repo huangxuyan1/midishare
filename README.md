@@ -67,8 +67,8 @@ Checks:
 ```bash
 npx tsc --noEmit
 npx eslint src
-npx vitest run             # 63 unit tests: schema permissions, ABC validation, ABC <-> notes, voices, note preview, MIDI import, undo history
-npm run test:e2e           # 21 Playwright tests; the signed-in ones need two DeepSpace test accounts
+npx vitest run             # 88 unit tests: schema permissions, ABC validation, ABC <-> notes, voices, note preview, MIDI import, the audio engines, undo history
+npm run test:e2e           # 23 Playwright tests; the signed-in ones need two DeepSpace test accounts
 ```
 
 The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's direct server calls to read A's draft, or to edit, unpublish or delete A's clips, come back `READ DENIED`, `UPDATE DENIED` and `DELETE DENIED`.
@@ -81,7 +81,7 @@ The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's 
 - **One track.** The roll has a single lane of notes, C2–B6.
 - **A key change re-spells the notes; it does not transpose.** In keys without flats, B♭ is written as `^A`.
 - **Browse and search run in the browser** over every clip the server lets the caller read. That is fine for a small site and would need server-side filtering and paging for a large one.
-- **The sound is a piano only, and the first sound needs a download.** Play and the note preview are rendered in the browser by Modular, my own audio engine, compiled to WebAssembly and playing a piano soundfont. The first Play or pressed note downloads the engine and the piano (about 7.5 MB). Every MIDI channel plays the piano, with no reverb. The site softens the beat accents that abcjs writes into the MIDI, so the downloaded `.mid` has stronger accents in other SoundFont players than Play has here. If Modular cannot load or rejects a clip, abcjs's built-in synth plays it, with piano samples from a third-party host. The site holds a hand-copied build of Modular; `src/modular/MANIFEST.txt` records which commit.
+- **The sound is a piano only, and the first sound needs a download.** Play and the note preview are rendered in the browser by Modular, my own audio engine, compiled to WebAssembly and playing a piano soundfont. The first Play or pressed note downloads the engine and the piano (about 7.5 MB). On the live site the browser console shows a "wasm streaming compile failed" error at that moment: the host serves the `.wasm` file with a generic content type, and the engine then loads from the downloaded bytes. Every MIDI channel plays the piano, with no reverb. The site softens the beat accents that abcjs writes into the MIDI, so the downloaded `.mid` has stronger accents in other SoundFont players than Play has here. If Modular cannot load or rejects a clip, abcjs's built-in synth plays it, with piano samples from a third-party host. The site holds a hand-copied build of Modular; `src/modular/MANIFEST.txt` records which commit.
 - **The AI assistant writes at most 16 bars** and spends the signed-in user's DeepSpace credits.
 - **The Ableton bridge** ([midi-clipboard](https://github.com/huangxuyan1/midi-clipboard), a separate project) is not part of this repo. It copies a MIDI clip in Ableton Live as ABC text and pastes ABC text back into Live, so a clip moves between Live and the site with one copy and one paste. That round trip was checked by hand, not by a test.
 
