@@ -10,8 +10,7 @@
  *
  * The @theme block below holds the default theme (slate). All other themes
  * live in `themes.css` as `[data-theme="<id>"]` override blocks. Switching
- * themes = changing the data-theme attribute on <html> in index.html. No
- * JS, no FOUC.
+ * themes = changing the data-theme attribute on <html> (see themes.ts).
  *
  * Status colors (success, warning, info) are intentionally NOT themed —
  * they stay consistent across every preset.
@@ -94,12 +93,13 @@
   /*
    * midishare's own tokens (not part of the scaffold).
    * Declared here so Tailwind generates classes for them: bg-roll, fill-note,
-   * bg-paper, font-mono and so on.
+   * font-mono and so on.
    */
   /* Fonts, loaded in index.html */
   --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  /* Piano roll: the grid, a resting note, and the keyboard (real piano colors) */
+  /* Piano roll: the grid, a resting note, and the keyboard (real piano colors).
+     These are the dark values; the daylight theme overrides them in themes.css. */
   --color-roll: #151311;
   --color-roll-dark: #0d0c0a;
   --color-roll-line: #292622;
@@ -107,9 +107,6 @@
   --color-note: #d9ccb4;
   --color-key-white: #ebe5d9;
   --color-key-black: #1a1815;
-  /* Sheet music is drawn in ink on paper */
-  --color-paper: #f3eee4;
-  --color-paper-foreground: #1c1a17;
 
   /* Animations */
   --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
