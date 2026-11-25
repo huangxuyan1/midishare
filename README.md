@@ -1,20 +1,22 @@
 # midishare
 
-A site for sharing short musical clips as [ABC notation](https://abcnotation.com/). Built on [DeepSpace](https://docs.deep.space) for the DeepSpace SWE Intern (Summer 2027) build exercise.
+Share short musical clips as text, and move them in and out of your DAW with copy and paste. Built on [DeepSpace](https://docs.deep.space) for the DeepSpace SWE Intern (Summer 2027) build exercise.
 
 **Live:** https://midishare.app.space
 
-ABC is the one format everywhere: it is what's stored, what the AI writes, and what goes on the clipboard. The browser turns it into sheet music and a `.mid` file with [abcjs](https://www.abcjs.net/), and into sound with [Modular](https://github.com/huangxuyan1/Modular), my own audio engine.
+A clip here is [ABC notation](https://abcnotation.com/), a plain-text music format. The same string is the database row, the AI's output and what goes on the clipboard. That is what lets a clip leave the browser: with [MIDI Clipboard](https://github.com/huangxuyan1/midi-clipboard/releases/latest), my add-on for Ableton Live, **Copy ABC** here and one shortcut in Live put the notes in a MIDI clip, and a copy in Live pastes back into the editor here. No file is exported or dragged.
+
+What you hear is rendered in the browser by [Modular](https://github.com/huangxuyan1/Modular), my own audio graph runtime, written in C++ and compiled to WebAssembly, playing a piano soundfont. [abcjs](https://www.abcjs.net/) draws the sheet music and writes the `.mid` file.
 
 ## Try it
 
-1. Open https://midishare.app.space/home. Published clips are readable without signing in: open one, press Play, download the `.mid`, copy the ABC.
-2. Sign in, then choose **New clip**.
-3. Type a prompt into **Ask the AI** (for example "4-bar lo-fi chord progression in D minor"), or paste ABC, or choose **Import MIDI** and pick a `.mid` file, or double-click the piano roll to add notes.
-4. Press Play above the piano roll. Save as a draft, or publish.
-5. On your clip's page: Edit, Publish/Unpublish, Delete. On anyone's clip: **Make a variation** opens the editor with that clip's ABC.
-6. Set a display name in **Settings** to sign your clips. Without one they show "by Anonymous".
-7. To paste a clip into Ableton Live, see https://midishare.app.space/ableton.
+1. Open https://midishare.app.space/home. Published clips are readable without signing in: open one, press Play, download the `.mid`, press **Copy ABC**.
+2. With MIDI Clipboard installed, press Ctrl+Shift+V in Ableton Live (Cmd+Shift+V on a Mac). The clip's notes are in your MIDI clip. Select notes in Live and press Ctrl+C (Cmd+C) to bring them back as ABC. https://midishare.app.space/ableton has the steps. Everything below works without Ableton.
+3. Sign in, then choose **New clip**.
+4. Paste ABC, or type a prompt into **Ask the AI** (for example "4-bar lo-fi chord progression in D minor"), or choose **Import MIDI** and pick a `.mid` file, or double-click the piano roll to add notes.
+5. Press Play above the piano roll. Save a draft, or publish.
+6. On your clip's page: Edit, Publish/Unpublish, Delete. On anyone's clip: **Make a variation** opens the editor with that clip's ABC.
+7. Set a display name in **Settings** to sign your clips. Without one they show "by Anonymous".
 
 ## What it does
 
@@ -25,16 +27,17 @@ ABC is the one format everywhere: it is what's stored, what the AI writes, and w
 | Profiles | A `profiles` collection: one optional display name per user, at most 40 characters. Without one, a user's clips show "by Anonymous". Everyone reads profiles, and a user writes only their own. A user reads only their own row in `users`. | `src/schemas/profiles-schema.ts`, `users-schema.ts`, `src/lib/profiles.ts` |
 | Browse | `/home`: published clips newest first, with search by title or tag. Each card names who made the clip. | `src/pages/(app)/home.tsx` |
 | People | `/me` (**My clips**): your own clips, drafts included. `/u/:id`: a named person's published clips. The display name is set in Settings. | `src/pages/(app)/(protected)/me.tsx`, `settings.tsx`, `src/pages/(app)/u/[id].tsx`, `src/components/ProfileView.tsx` |
-| Ableton page | `/ableton`: what MIDI Clipboard is, the copy and paste steps, and a link to its repo. It reads nothing from DeepSpace. | `src/pages/(app)/ableton.tsx` |
 | Clip page | `/clips/:id`: a read-only piano roll with the same transport as the editor, sheet music, Download .mid, Copy ABC, Make a variation, and the owner's actions. | `src/pages/(app)/clips/[id].tsx`, `src/components/ClipPlayer.tsx`, `AbcView.tsx` |
+| Ableton round trip | **Copy ABC** puts a clip on the clipboard, MIDI Clipboard pastes it into a clip in Live, and notes copied in Live paste into the editor as ABC. The site's part is the shared format: validation accepts the lengths the add-on writes (such as `z5`), "Line up voices" repairs voices written on different numbers of lines, and the site and the add-on read ties and chord symbols the same way. `/ableton` has the steps and links to the latest release and the install guide. | `src/pages/(app)/ableton.tsx`, `src/lib/abc.ts`, `abc-voices.ts`, `abc-notes.ts` |
+| Sound | Play and the note preview are rendered by Modular, my own audio graph runtime, compiled from C++ to a 109 KB WebAssembly module, with a piano soundfont. The clip goes in as the same MIDI bytes that Download .mid writes. Modular renders it whole into one stereo buffer, and Web Audio plays that buffer, so seeking and stopping stay in the browser. abcjs's built-in synth is the backup when Modular cannot load or rejects a clip. | `src/lib/audio-engine.ts`, `modular-engine.ts`, `modular-piano.ts`, `midi-velocity.ts`, `src/modular/`, `src/assets/piano/` |
 | Editor | `/new` and `/edit/:id`. The ABC text is the single source of truth. The piano roll, the title/tempo/meter/key fields and the sheet music are views of it that write back to it. | `src/components/ClipForm.tsx`, `MetadataFields.tsx` |
 | Piano roll | SVG, 16th-note grid, C2–B6. Double-click adds a note, drag moves it, drag either end to resize, double-click a note to delete it. A ruler of bar numbers runs along the top. Pointing at a note shows its name; pressing it plays its pitch, and dragging it plays each pitch it passes. Read-only on the clip page. | `src/components/PianoRoll.tsx`, `src/lib/note-preview.ts` |
 | Transport | Play, Stop, Reset, a bar.beat counter and a moving playhead. In a clip wider than the view, the playhead stays in the middle while the roll slides under it. Click or drag in the roll's ruler to move the playhead; a playing clip carries on from where it is dropped. The space bar toggles play/stop. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
-| Sound | Play and the note preview are rendered by Modular, my own audio graph runtime, compiled to WebAssembly, with a piano soundfont. Each clip is rendered whole into one buffer, which Web Audio plays. abcjs's built-in synth is the backup when Modular cannot load. | `src/lib/audio-engine.ts`, `modular-engine.ts`, `midi-velocity.ts`, `src/modular/`, `src/assets/piano/` |
 | ABC ↔ notes | ABC → notes uses abcjs's own audio data, so the roll shows what you hear. Notes → ABC writes chords, ties and extra voices. | `src/lib/abc-notes.ts`, `src/lib/abc-headers.ts` |
 | MIDI import | **Import MIDI** in the editor reads a `.mid` file in the browser and replaces the clip with its notes, written as ABC. All tracks are merged into one, the drum channel is skipped, and the first tempo and time signature are kept. | `src/lib/midi-import.ts` |
 | AI assistant | `POST /api/abc/generate`: sign-in required, capped prompt, one model call through DeepSpace's AI proxy. The reply must parse as ABC; if it doesn't, the model gets one retry with the parser's errors. | `src/server/abc-routes.ts`, `src/components/AiAssist.tsx` |
 | Validation | ABC is valid when it has a `K:` line, abcjs finds music, and abcjs reports no warnings. One warning is allowed: a length that isn't one written note value (`z5`), which is legal ABC. Voices must also be in step: abcjs matches voices by text line, so voices with different numbers of music lines are refused, and the editor offers a "Line up voices" button that rewrites them four bars per line. The editor and the AI route use the same check. | `src/lib/abc.ts`, `src/lib/abc-voices.ts` |
+| Themes | Studio (dark, the default) and Daylight (light), switched with the sun/moon button in the top bar. The choice is kept in the browser. | `src/themes.css`, `src/themes.ts`, `src/components/ThemeToggle.tsx` |
 
 ## DeepSpace features used
 
@@ -72,8 +75,8 @@ Checks:
 ```bash
 npx tsc --noEmit
 npx eslint src
-npx vitest run             # 97 unit tests: schema permissions, ABC validation, ABC <-> notes, voices, note preview, MIDI import, the audio engines, undo history
-npm run test:e2e           # 26 Playwright tests; the signed-in ones need two DeepSpace test accounts
+npx vitest run             # 97 unit tests: clip and profile permissions, ABC validation, ABC <-> notes, voices, note preview, MIDI import, the audio engines, undo history
+npx deepspace test run all # adds the 26 Playwright tests: 9 smoke, 2 API, 15 signed-in. The signed-in ones need two DeepSpace test accounts
 ```
 
 The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's direct server calls to read A's draft, or to edit, unpublish or delete A's clips, come back `READ DENIED`, `UPDATE DENIED` and `DELETE DENIED`.
@@ -86,9 +89,9 @@ The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's 
 - **One track.** The roll has a single lane of notes, C2–B6.
 - **A key change re-spells the notes; it does not transpose.** In keys without flats, B♭ is written as `^A`.
 - **Browse and search run in the browser** over every clip the server lets the caller read. That is fine for a small site and would need server-side filtering and paging for a large one.
-- **The sound is a piano only, and the first sound needs a download.** Play and the note preview are rendered in the browser by Modular, my own audio engine, compiled to WebAssembly and playing a piano soundfont. The first Play or pressed note downloads the engine and the piano (about 7.5 MB). Every MIDI channel plays the piano, with no reverb. The site softens the beat accents that abcjs writes into the MIDI, so the downloaded `.mid` has stronger accents in other SoundFont players than Play has here. If Modular cannot load or rejects a clip, abcjs's built-in synth plays it, with piano samples from a third-party host. The site holds a hand-copied build of Modular; `src/modular/MANIFEST.txt` records which commit.
+- **The sound is a piano only, and the first sound needs a download.** Play and the note preview are rendered in the browser by Modular, my own audio engine, compiled to WebAssembly and playing a piano soundfont. The first Play or pressed note downloads the engine and the piano (about 8 MB). Every MIDI channel plays the piano, with no reverb. The site softens the beat accents that abcjs writes into the MIDI, so the downloaded `.mid` has stronger accents in other SoundFont players than Play has here. If Modular cannot load or rejects a clip, abcjs's built-in synth plays it, with piano samples from a third-party host. The site holds a hand-copied build of Modular; `src/modular/MANIFEST.txt` records which commit.
 - **The AI assistant writes at most 16 bars** and spends the signed-in user's DeepSpace credits.
-- **The Ableton bridge** ([midi-clipboard](https://github.com/huangxuyan1/midi-clipboard), a separate project) is not part of this repo. It copies a MIDI clip in Ableton Live as ABC text and pastes ABC text back into Live, so a clip moves between Live and the site with one copy and one paste. That round trip was checked by hand, not by a test. Its first release, [MidiClipboard 1.0.0](https://github.com/huangxuyan1/midi-clipboard/releases/tag/v1.0.0), is for Windows and macOS, and plays a chord symbol such as `"Dm"` the way this site does. The site's [/ableton](https://midishare.app.space/ableton) page has the steps.
+- **The Ableton add-on** ([midi-clipboard](https://github.com/huangxuyan1/midi-clipboard), a separate project of mine) is not part of this repo. It copies a MIDI clip in Ableton Live as ABC text and pastes ABC text back into Live, so a clip moves between Live and the site with one copy and one paste. That round trip was checked by hand and by ear, not by a test. Its first release, [MidiClipboard 1.0.0](https://github.com/huangxuyan1/midi-clipboard/releases/tag/v1.0.0), is for Windows and macOS, and plays a chord symbol such as `"Dm"` the way this site does. The site's [/ableton](https://midishare.app.space/ableton) page has the steps.
 
 ## Credits
 
@@ -96,7 +99,7 @@ The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's 
 
 ## How it was built
 
-A coding agent (Claude Code) wrote most of the code under direction. The record of that is in [`docs/`](docs):
+A coding agent (Claude Code) wrote the code under my direction; I made the product and architecture decisions. The record of that is in [`docs/`](docs):
 
 - [BUILD_LOG.md](docs/BUILD_LOG.md): each decision, what the agent built, what was verified and how, and the bugs found on the live site.
 - [HANDOFF.md](docs/HANDOFF.md): the brief the agent started from.
