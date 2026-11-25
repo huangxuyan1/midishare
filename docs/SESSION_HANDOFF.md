@@ -9,12 +9,12 @@ For the next agent session. Read this first, then [CLAUDE.md](../CLAUDE.md) (wor
 The app is finished and submittable. What is left is Xuyan's own checking and the submission note.
 
 - **Live:** https://midishare.app.space (app `midishare`, id `app_01M7VPXYB581QQY5JXH4RF7NAN`).
-  - Latest release: `rel_01M8886Y4Y1Y7NJ8H9A8ZKMJ38`, commit `543baf1` (the `/ableton` page about MIDI Clipboard and two ABC writer fixes), `dirty: false`. Every commit after it changes only docs.
+  - Latest release: `rel_01M889EFXN44CBGSJRR8WJSWQN`, commit `f3aafb1` (display names, `/me`, `/u/:id`, a public-only library), `dirty: false`. Every commit after it changes only docs.
   - The platform serves `.wasm` files as `application/octet-stream`. Left alone, the browser logs "wasm streaming compile failed" on the first sound and loads Modular from the downloaded bytes instead. `src/lib/modular-piano.ts` avoids that: it downloads the file itself and hands Modular a copy labelled `application/wasm`, so the console stays clean. The first Modular release, rel_01M883MT4CWNZ2X22AFQRB19Z5, did not have this fix and showed the two errors; the latest release has it.
 - **Repo:** public GitHub `huangxuyan1/midishare`, branch `main`. Everything is committed and pushed.
   - The DeepSpace source is GitHub. **Never run `deepspace push`.**
-- **Data:** 5 published example clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan. Xuyan had not listened to them when they were published.
-- **Tests:** 97 unit tests and 26 Playwright tests pass (2026-11-24, branch `profiles`). Type-check and lint are clean.
+- **Data:** 5 published example clips written by the agent (record ids `example-*`, source `ai`), owned by Xuyan. They show "by Anonymous" until Xuyan saves a display name in Settings on the live site; the `profiles` collection was empty when checked after the release. Xuyan had not listened to them when they were published.
+- **Tests:** 97 unit tests and 26 Playwright tests pass (2026-11-24). Type-check and lint are clean.
   - `npx tsc --noEmit`, `npx eslint .`, `npx vitest run`
   - `npx deepspace test run all --port 5187` (port 5173 belongs to another dev server; don't kill it)
 - **Test accounts:** "Test A" and "Test B" exist. The Playwright fixture signs them in from the CLI's saved credentials.
