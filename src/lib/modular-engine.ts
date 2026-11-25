@@ -2,10 +2,11 @@
  * The audio engine that uses Modular, Xuyan's audio graph runtime, compiled
  * to WebAssembly and playing a soundfont.
  *
- * How it works: the clip goes to Modular as the same MIDI bytes that
- * Download .mid produces. Modular sends back the left and right channels as
- * two arrays of samples. We make them louder (see GAIN) and copy them into an
- * AudioBuffer.
+ * How it works: the clip goes to Modular as the MIDI bytes that Download .mid
+ * produces, with one change: each note's velocity is rewritten so the accents
+ * sound as they do in the abcjs synth (see midi-velocity.ts). Modular sends
+ * back the left and right channels as two arrays of samples. We make them
+ * louder (see GAIN) and copy them into an AudioBuffer.
  *
  * The buffer holds the notes and then the last ones dying away, for at most
  * two seconds. Rests at the end of the clip are not in it; the transport
@@ -17,14 +18,15 @@
 import type { Instrument } from '../modular/modular.mjs'
 import { abcToMidi } from './abc'
 import type { AudioEngine } from './audio-engine'
+import { withSoundfontVelocities } from './midi-velocity'
 
 /**
  * Modular sends the piano's samples as they are, and leaves the level to the
- * page. Measured on the same clips, they are about 4.4 times quieter than the
- * abcjs synth, so this brings the two engines to about the same loudness.
- * PROVISIONAL: Xuyan sets the final value by ear.
+ * page. Measured on the same clips, with the velocities rewritten, they are
+ * about 3 times quieter than the abcjs synth, so this brings the two engines
+ * to about the same loudness. PROVISIONAL: Xuyan sets the final value by ear.
  */
-export const GAIN = 4.4
+export const GAIN = 3
 
 /**
  * Makes the engine. `loadInstrument` loads the Modular module and the
@@ -41,7 +43,8 @@ export function modularEngine(loadInstrument: () => Promise<Instrument>): AudioE
         throw error
       })
       const piano = await instrument
-      const { sampleRate, channels } = await piano.render(abcToMidi(abc), context.sampleRate)
+      const midi = withSoundfontVelocities(abcToMidi(abc))
+      const { sampleRate, channels } = await piano.render(midi, context.sampleRate)
       const [left, right] = channels
       if (left.length === 0) return null // nothing to play
 

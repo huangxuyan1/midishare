@@ -67,7 +67,8 @@ function voicesInStep(tune: abcjs.TuneObject): boolean {
 /**
  * The clip as the bytes of a Standard MIDI File (.mid).
  * Download .mid and the Modular audio engine both get their bytes here, so
- * what a clip sounds like and what its download contains can't drift apart.
+ * the notes a clip plays and the notes in its download can't drift apart.
+ * (The engine changes one thing in its copy: the velocities, see midi-velocity.ts.)
  */
 export function abcToMidi(abc: string): Uint8Array<ArrayBuffer> {
   // 'binary' returns one Uint8Array per tune in the text; clips hold one tune.

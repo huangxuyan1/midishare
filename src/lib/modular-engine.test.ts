@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { abcToMidi, EXAMPLE_ABC } from './abc'
 import type { Instrument } from '../modular/modular.mjs'
 import { GAIN, modularEngine } from './modular-engine'
+import { withSoundfontVelocities } from './midi-velocity'
 import { previewAbc } from './note-preview'
 
 /** Stands in for the browser's AudioContext: remembers what was copied into each buffer. */
@@ -35,7 +36,7 @@ function fakeInstrument(left: number[], right: number[]) {
 }
 
 describe('modularEngine', () => {
-  it("sends Modular the clip's Download .mid bytes and the context's sample rate", async () => {
+  it("sends Modular the clip's Download .mid bytes, with the velocities rewritten, and the context's sample rate", async () => {
     const { instrument, calls } = fakeInstrument([0.5], [0.25])
     const { context } = fakeContext(48000)
 
@@ -43,7 +44,7 @@ describe('modularEngine', () => {
 
     expect(calls).toHaveLength(1)
     expect(calls[0].sampleRate).toBe(48000)
-    expect(calls[0].midi).toEqual(abcToMidi(EXAMPLE_ABC))
+    expect(calls[0].midi).toEqual(withSoundfontVelocities(abcToMidi(EXAMPLE_ABC)))
     // A Standard MIDI File starts with the four letters "MThd".
     expect(String.fromCharCode(...calls[0].midi.slice(0, 4))).toBe('MThd')
   })
