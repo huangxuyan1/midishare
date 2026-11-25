@@ -589,6 +589,31 @@ test('Play renders the clip with the Modular engine', async ({ users }) => {
   expect(samples).toEqual([])
 })
 
+test('Modular loads without console errors when the host serves its file as plain bytes', async ({ users }) => {
+  const [a] = await users(1)
+  const samples = watchSamples(a.page)
+  const sounds = await watchSounds(a.page)
+  const errors: string[] = []
+  a.page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text())
+  })
+  // The live host serves the .wasm as "application/octet-stream", not
+  // "application/wasm" as the local server does. Do the same here.
+  await a.page.route('**/*.wasm', async (route) => {
+    const response = await route.fetch()
+    await route.fulfill({ response, headers: { ...response.headers(), 'content-type': 'application/octet-stream' } })
+  })
+  await a.page.goto('/new')
+  await expect(a.page.getByTestId('roll-note').first()).toBeVisible({ timeout: 15_000 })
+
+  await a.page.getByLabel('ABC notation').fill('X:1\nT:Plain bytes\nM:4/4\nL:1/4\nQ:1/4=120\nK:C\nC E G c |]')
+  await a.page.getByTestId('transport').getByRole('button', { name: 'Play' }).click()
+
+  await expect.poll(async () => (await sounds()).length).toBe(1)
+  expect(samples).toEqual([]) // Modular played, not the backup
+  expect(errors).toEqual([])
+})
+
 test('when Modular cannot load, the abcjs synth plays the note', async ({ users }) => {
   const [a] = await users(1)
   const samples = watchSamples(a.page)
