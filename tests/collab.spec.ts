@@ -653,6 +653,8 @@ test('the clip page shows a read-only piano roll with a transport', async ({ use
     await expect(roll).toBeVisible({ timeout: 15_000 })
     await expect(a.page.getByTestId('transport')).toBeVisible()
     await expect(a.page.getByTestId('abc-notation').locator('svg')).toBeVisible()
+    // Under the Copy ABC button, a link to the page about pasting into Ableton.
+    await expect(a.page.getByRole('link', { name: 'Paste the copied ABC straight into Ableton Live' })).toHaveAttribute('href', '/ableton')
 
     // EXAMPLE_ABC is "C D E F": four notes.
     const notes = a.page.getByTestId('roll-note')

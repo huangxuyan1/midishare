@@ -104,18 +104,23 @@ export default function ClipPage() {
         </div>
 
         {/* What anyone can take away from a clip. */}
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={copyAbc}>
-            <Copy className="size-4" /> Copy ABC
-          </Button>
-          <Button variant="outline" onClick={() => downloadMidi(abc, title)}>
-            <Download className="size-4" /> Download .mid
-          </Button>
-          {isSignedIn && (
-            <Button variant="outline" onClick={() => navigate(`/new?from=${clip.recordId}`)}>
-              <GitFork className="size-4" /> Make a variation
+        <div className="flex flex-col items-start gap-2 sm:items-end">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={copyAbc}>
+              <Copy className="size-4" /> Copy ABC
             </Button>
-          )}
+            <Button variant="outline" onClick={() => downloadMidi(abc, title)}>
+              <Download className="size-4" /> Download .mid
+            </Button>
+            {isSignedIn && (
+              <Button variant="outline" onClick={() => navigate(`/new?from=${clip.recordId}`)}>
+                <GitFork className="size-4" /> Make a variation
+              </Button>
+            )}
+          </div>
+          <Link to="/ableton" className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground">
+            Paste the copied ABC straight into Ableton Live
+          </Link>
         </div>
       </header>
 

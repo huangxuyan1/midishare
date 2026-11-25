@@ -85,6 +85,19 @@ test.describe('Smoke tests', () => {
     await expect(page.getByTestId('nav-user-name')).toHaveCount(0)
   })
 
+  test('the Ableton page is in the nav and links to MIDI Clipboard on GitHub', async ({ page }) => {
+    const errors = captureConsoleErrors(page)
+    await page.goto('/home')
+    await page.getByTestId('app-navigation').getByRole('link', { name: 'Ableton' }).click()
+    await expect(page).toHaveURL(/\/ableton$/)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Paste a clip into Ableton.')
+    await expect(page.getByRole('link', { name: 'Get MIDI Clipboard' })).toHaveAttribute(
+      'href',
+      'https://github.com/huangxuyan1/midi-clipboard',
+    )
+    expect(errors).toEqual([])
+  })
+
   test('unknown route shows 404', async ({ page }) => {
     await page.goto('/nonexistent-page-xyz')
     await waitForApp(page)
