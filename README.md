@@ -4,7 +4,7 @@ A site for sharing short musical clips as [ABC notation](https://abcnotation.com
 
 **Live:** https://midishare.app.space
 
-ABC is the one format everywhere: it is what's stored, what the AI writes, and what goes on the clipboard. The browser turns it into sheet music, sound and a `.mid` file with [abcjs](https://www.abcjs.net/).
+ABC is the one format everywhere: it is what's stored, what the AI writes, and what goes on the clipboard. The browser turns it into sheet music and a `.mid` file with [abcjs](https://www.abcjs.net/), and into sound with [Modular](https://github.com/huangxuyan1/Modular), my own audio engine.
 
 ## Try it
 
@@ -25,6 +25,7 @@ ABC is the one format everywhere: it is what's stored, what the AI writes, and w
 | Editor | `/new` and `/edit/:id`. The ABC text is the single source of truth. The piano roll, the title/tempo/meter/key fields and the sheet music are views of it that write back to it. | `src/components/ClipForm.tsx`, `MetadataFields.tsx` |
 | Piano roll | SVG, 16th-note grid, C2–B6. Double-click adds a note, drag moves it, drag either end to resize, double-click a note to delete it. A ruler of bar numbers runs along the top. Pointing at a note shows its name; pressing it plays its pitch, and dragging it plays each pitch it passes. Read-only on the clip page. | `src/components/PianoRoll.tsx`, `src/lib/note-preview.ts` |
 | Transport | Play, Stop, Reset, a bar.beat counter and a moving playhead. In a clip wider than the view, the playhead stays in the middle while the roll slides under it. Click or drag in the roll's ruler to move the playhead; a playing clip carries on from where it is dropped. The space bar toggles play/stop. | `src/lib/use-playback.ts`, `src/components/Transport.tsx` |
+| Sound | Play and the note preview are rendered by Modular, my own audio graph runtime, compiled to WebAssembly, with a piano soundfont. Each clip is rendered whole into one buffer, which Web Audio plays. abcjs's built-in synth is the backup when Modular cannot load. | `src/lib/audio-engine.ts`, `modular-engine.ts`, `midi-velocity.ts`, `src/modular/`, `src/assets/piano/` |
 | ABC ↔ notes | ABC → notes uses abcjs's own audio data, so the roll shows what you hear. Notes → ABC writes chords, ties and extra voices. | `src/lib/abc-notes.ts`, `src/lib/abc-headers.ts` |
 | MIDI import | **Import MIDI** in the editor reads a `.mid` file in the browser and replaces the clip with its notes, written as ABC. All tracks are merged into one, the drum channel is skipped, and the first tempo and time signature are kept. | `src/lib/midi-import.ts` |
 | AI assistant | `POST /api/abc/generate`: sign-in required, capped prompt, one model call through DeepSpace's AI proxy. The reply must parse as ABC; if it doesn't, the model gets one retry with the parser's errors. | `src/server/abc-routes.ts`, `src/components/AiAssist.tsx` |
@@ -96,6 +97,6 @@ A coding agent (Claude Code) wrote most of the code under direction. The record 
 - [HANDOFF.md](docs/HANDOFF.md): the brief the agent started from.
 - [SESSION_HANDOFF.md](docs/SESSION_HANDOFF.md): the state and to-do list passed between agent sessions.
 - [SUBMISSION.md](docs/SUBMISSION.md): the submission note.
-- [MODULAR_AUDIO_ENGINE.md](docs/MODULAR_AUDIO_ENGINE.md): a planned change of audio engine, not built.
+- [MODULAR_AUDIO_ENGINE.md](docs/MODULAR_AUDIO_ENGINE.md): the plan for the change of audio engine, written before it was built.
 
 [CLAUDE.md](CLAUDE.md) holds the working rules the agent follows, and [AGENTS.md](AGENTS.md) is the DeepSpace scaffold's own agent guide.

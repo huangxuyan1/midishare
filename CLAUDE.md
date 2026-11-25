@@ -23,5 +23,5 @@ DeepSpace SWE Intern (Summer 2027) build exercise: an ABC-notation clip-sharing 
 - Update [BUILD_LOG.md](docs/BUILD_LOG.md) as you go: decisions, what the agent generated, what was verified and how. Don't reconstruct it afterwards.
 
 ## Related
-- Using Modular (`C:\Users\alvin\Documents\Projects\Modular`) as the audio engine is planned, set aside as a separate task: [docs/MODULAR_AUDIO_ENGINE.md](docs/MODULAR_AUDIO_ENGINE.md).
+- Modular (`C:\Users\alvin\Documents\Projects\Modular`) is the audio engine since 2026-11-24: `src/lib/audio-engine.ts` picks it, with the abcjs synth as backup, and `src/modular/` holds a hand-copied build (see its `MANIFEST.txt`). The earlier plan is [docs/MODULAR_AUDIO_ENGINE.md](docs/MODULAR_AUDIO_ENGINE.md).
 - The Ableton bridge lives at `C:\Users\alvin\Documents\Projects\midi-clipboard` (outside this folder). It copies and pastes ABC since 2026-11-24 (Xuyan's work there; background in docs/HANDOFF.md section 5).

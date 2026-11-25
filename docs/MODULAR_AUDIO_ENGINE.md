@@ -1,6 +1,6 @@
-# Modular as the audio engine (set aside, nothing built)
+# Modular as the audio engine (the plan from 2026-11-23; built on 2026-11-24)
 
-Status on 2026-11-23: **planned only.** Xuyan wants midishare to make its sound with Modular, his own graph runtime, and to build a soundfont supernode in Modular for it. He set the task aside on 2026-11-23 as a separate task. No code for it exists in either project. midishare still plays sound with abcjs.
+Status on 2026-11-24: **built.** The site plays through Modular; see `src/lib/audio-engine.ts`, `src/lib/modular-engine.ts` and the rows of that day in [BUILD_LOG.md](BUILD_LOG.md). What was built differs from this plan in places: Modular renders each clip whole into a buffer that Web Audio plays, and the soundfont instrument is a node inside Modular. The rest of this file is the plan as written on 2026-11-23, kept for the record.
 
 This file records what the agent found when it inspected Modular, and the plan that came out of it, so the work can start later without repeating the inspection.
 

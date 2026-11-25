@@ -118,7 +118,7 @@ export default function Landing() {
         <footer className="border-t border-border">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-6">
             <Logo />
-            <p className="text-xs text-muted-foreground">Built on DeepSpace. Notation and sound by abcjs.</p>
+            <p className="text-xs text-muted-foreground">Built on DeepSpace. Notation by abcjs. Sound by Modular.</p>
           </div>
         </footer>
       </div>

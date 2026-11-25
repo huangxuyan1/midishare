@@ -30,7 +30,7 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
    - `/new` starts with an empty title while the example ABC has `T:Example`
    - in keys without flats (C, Am…), B♭ is spelled `^A`
 7. **Set aside, separate tasks:**
-   - **Modular as the audio engine, with a soundfont supernode.** Planned only; see [MODULAR_AUDIO_ENGINE.md](MODULAR_AUDIO_ENGINE.md). The Modular part belongs in a session opened in the Modular folder.
+   - **Modular as the audio engine: built on 2026-11-24** (branch `modular-audio-engine`). `src/lib/audio-engine.ts` picks the engine: Modular with a piano soundfont, and the abcjs synth as backup. The Modular build in `src/modular/` is a hand-copied stopgap from Modular commit `00bfcac`; a newer, hardened CI build exists (artifact `modular-web-54612acab62e2a9dde8e5d3775567e61f5d35e04`), and replacing the stopgap with it needs Xuyan's approval of the download. Not built: sending clips with drums or with abcjs MIDI-writer defects to the abcjs synth, loading Modular before the first Play, rendering in a Web Worker. [MODULAR_AUDIO_ENGINE.md](MODULAR_AUDIO_ENGINE.md) is the earlier plan.
    - **The Ableton bridge now copies and pastes ABC** (`C:\Users\alvin\Documents\Projects\midi-clipboard`). Xuyan did this outside this folder (bridge commit `5d60b4d`, not pushed to GitHub when checked on 2026-11-24) and tested both directions by hand on 2026-11-24: a clip copied in Live pastes into the editor, and a clip's ABC copied from the site pastes into Live.
 
 ## 3. What the app does
@@ -53,7 +53,7 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 | Record tools | `registerAgent` mounts the record tools under `/_deepspace/agent`. `deepspace agent invoke` and the two-user test use them. | `src/ai/agent.ts`, `src/ai/tools.ts` |
 | Tests | Unit: schema permissions, ABC validation, ABC ↔ notes, undo history. Playwright: smoke, API, two-user ownership, editor undo/redo, odd lengths, lining up voices, dragging the playhead, the centred playhead during playback, resizing from either end, note preview, MIDI import, read-only roll. | `src/**/*.test.ts`, `tests/` |
 
-Sound comes from abcjs's synth, which downloads piano samples from a third-party host at play time. See MODULAR_AUDIO_ENGINE.md.
+Sound comes from Modular, Xuyan's audio graph runtime, compiled to WebAssembly and playing a piano soundfont (`src/lib/modular-engine.ts`, `src/modular/`, `src/assets/piano/`). The first sound downloads the module and the piano (about 7.5 MB) from the site itself. When Modular fails, the abcjs synth plays, with piano samples from a third-party host. The engine is chosen in `src/lib/audio-engine.ts`.
 
 ### Design
 
@@ -75,7 +75,7 @@ Sound comes from abcjs's synth, which downloads piano samples from a third-party
 - Undo/redo in the editor.
 - The UI direction is "Studio (dark DAW)".
 - Repo cleanup: process docs live in `docs/`; the unmounted AI chat routes and the `/api-status` page are removed; the installed skill copies are gitignored.
-- The Modular audio engine is a separate task, set aside.
+- The Modular audio engine is in use since 2026-11-24. The gain (3), the softened accents and the playhead stopping at the end of the music were settled with Xuyan by ear.
 - **Chosen by the agent; Xuyan may change these:**
   - Inside the Studio direction: the exact colours, IBM Plex, no light mode (Xuyan asked for one on 2026-11-24, see Themes above), "New clip" as a button in the bar, Settings hidden when signed out.
   - A key change keeps the pitches and re-spells them; it does not transpose.
