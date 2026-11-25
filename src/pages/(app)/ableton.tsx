@@ -3,11 +3,12 @@
  *
  * MIDI Clipboard is a separate project (a remote script for Ableton Live) that
  * pastes ABC text from the clipboard into a MIDI clip, and copies notes out of
- * Live as ABC. This page only describes it and links to its GitHub repo; there
- * is no data here, so it reads nothing from DeepSpace.
+ * Live as ABC. This page only describes it and links to its latest release
+ * and its install guide on GitHub; there is no data here, so it reads nothing
+ * from DeepSpace.
  *
- * Keep the claims in step with that repo's README. If it changes (a Mac
- * release, new shortcuts), change the text here.
+ * Keep the claims in step with that repo's README. If it changes (new
+ * shortcuts, another platform), change the text here.
  */
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -15,6 +16,7 @@ import { ArrowRight, ExternalLink } from 'lucide-react'
 import { LEGEND } from '@/lib/utils'
 
 const REPO_URL = 'https://github.com/huangxuyan1/midi-clipboard'
+const DOWNLOAD_URL = `${REPO_URL}/releases/latest`
 const INSTALL_URL = `${REPO_URL}#install`
 
 const PRIMARY_LINK =
@@ -50,7 +52,8 @@ const STEPS: { name: string; text: ReactNode }[] = [
     name: 'Paste',
     text: (
       <>
-        In Live, open a MIDI clip and press <Shortcut keys={['Ctrl', 'Shift', 'V']} />. The notes are in the clip.
+        In Live, open a MIDI clip and press <Shortcut keys={['Ctrl', 'Shift', 'V']} />, or{' '}
+        <Shortcut keys={['Cmd', 'Shift', 'V']} /> on a Mac. The notes are in the clip.
       </>
     ),
   },
@@ -58,23 +61,24 @@ const STEPS: { name: string; text: ReactNode }[] = [
     name: 'Send it back',
     text: (
       <>
-        Select notes in Live and press <Shortcut keys={['Ctrl', 'C']} />. They are on your clipboard as ABC, ready
-        to paste into a new clip here.
+        Select notes in Live and press <Shortcut keys={['Ctrl', 'C']} />, or <Shortcut keys={['Cmd', 'C']} /> on a
+        Mac. They are on your clipboard as ABC, ready to paste into a new clip here.
       </>
     ),
   },
 ]
 
 const INSTALL = [
-  'Get the MidiClipboard folder from GitHub.',
-  "Put it in Ableton's User Library, inside Remote Scripts.",
+  'Download the zip for Windows or for macOS from GitHub, and unzip it.',
+  "Put the MidiClipboard folder in Ableton's User Library, inside Remote Scripts, and restart Live.",
   "In Live's preferences, under Link/Tempo/MIDI, pick MidiClipboard as a Control Surface.",
 ]
 
 const GOOD_TO_KNOW = [
-  'It works with Ableton Live 11 and 12 on Windows. A Mac version is on the way.',
+  'It works with Ableton Live 11 and 12, on Windows 10 or 11 and on macOS 10.15 or later.',
+  'A Mac needs two extra steps, because Apple has not notarized the helper. The install guide has them.',
   "Every note keeps its pitch, start and length. Velocity does not carry over: ABC has no place for it, so pasted notes get Live's default velocity.",
-  'Chord symbols like "Dm" paste as the melody only for now. An update that plays them the way this site does is being built.',
+  'Chord symbols like "Dm" paste as a bass-and-chord accompaniment, the same notes this site plays.',
   "The shortcuts only work while Live is the front window, and Live's own copy and paste keep working.",
 ]
 
@@ -91,7 +95,7 @@ export default function AbletonPage() {
           notes are in your MIDI clip. No file to export, nothing to drag.
         </p>
         <div className="flex flex-wrap gap-3">
-          <a href={REPO_URL} target="_blank" rel="noreferrer" className={PRIMARY_LINK}>
+          <a href={DOWNLOAD_URL} target="_blank" rel="noreferrer" className={PRIMARY_LINK}>
             Get MIDI Clipboard <ExternalLink className="size-4" aria-hidden />
           </a>
           <Link to="/home" className={QUIET_LINK}>

@@ -93,7 +93,7 @@ test.describe('Smoke tests', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Paste a clip into Ableton.')
     await expect(page.getByRole('link', { name: 'Get MIDI Clipboard' })).toHaveAttribute(
       'href',
-      'https://github.com/huangxuyan1/midi-clipboard',
+      'https://github.com/huangxuyan1/midi-clipboard/releases/latest',
     )
     expect(errors).toEqual([])
   })

@@ -13,14 +13,19 @@ ABC is the one format everywhere: it is what's stored, what the AI writes, and w
 3. Type a prompt into **Ask the AI** (for example "4-bar lo-fi chord progression in D minor"), or paste ABC, or choose **Import MIDI** and pick a `.mid` file, or double-click the piano roll to add notes.
 4. Press Play above the piano roll. Save as a draft, or publish.
 5. On your clip's page: Edit, Publish/Unpublish, Delete. On anyone's clip: **Make a variation** opens the editor with that clip's ABC.
+6. Set a display name in **Settings** to sign your clips. Without one they show "by Anonymous".
+7. To paste a clip into Ableton Live, see https://midishare.app.space/ableton.
 
 ## What it does
 
 | Area | What | Main files |
 |---|---|---|
-| Data | One `clips` collection: title, description, tags, abc, status (`draft`/`published`), source (`pasted`/`ai`). The server caps every field's length. | `src/schemas/clips-schema.ts` |
+| Data | The `clips` collection: title, description, tags, abc, status (`draft`/`published`), source (`pasted`/`ai`). The server caps every field's length. | `src/schemas/clips-schema.ts` |
 | Permissions | Anyone, signed in or not, reads published clips. Signed-in users create clips and update or delete their own. A draft is visible only to its owner. The app owner can delete any clip. | same file |
-| Browse | `/home`: my clips, and published clips newest first, with search by title or tag. | `src/pages/(app)/home.tsx` |
+| Profiles | A `profiles` collection: one optional display name per user, at most 40 characters. Without one, a user's clips show "by Anonymous". Everyone reads profiles, and a user writes only their own. A user reads only their own row in `users`. | `src/schemas/profiles-schema.ts`, `users-schema.ts`, `src/lib/profiles.ts` |
+| Browse | `/home`: published clips newest first, with search by title or tag. Each card names who made the clip. | `src/pages/(app)/home.tsx` |
+| People | `/me` (**My clips**): your own clips, drafts included. `/u/:id`: a named person's published clips. The display name is set in Settings. | `src/pages/(app)/(protected)/me.tsx`, `settings.tsx`, `src/pages/(app)/u/[id].tsx`, `src/components/ProfileView.tsx` |
+| Ableton page | `/ableton`: what MIDI Clipboard is, the copy and paste steps, and a link to its repo. It reads nothing from DeepSpace. | `src/pages/(app)/ableton.tsx` |
 | Clip page | `/clips/:id`: a read-only piano roll with the same transport as the editor, sheet music, Download .mid, Copy ABC, Make a variation, and the owner's actions. | `src/pages/(app)/clips/[id].tsx`, `src/components/ClipPlayer.tsx`, `AbcView.tsx` |
 | Editor | `/new` and `/edit/:id`. The ABC text is the single source of truth. The piano roll, the title/tempo/meter/key fields and the sheet music are views of it that write back to it. | `src/components/ClipForm.tsx`, `MetadataFields.tsx` |
 | Piano roll | SVG, 16th-note grid, C2–B6. Double-click adds a note, drag moves it, drag either end to resize, double-click a note to delete it. A ruler of bar numbers runs along the top. Pointing at a note shows its name; pressing it plays its pitch, and dragging it plays each pitch it passes. Read-only on the clip page. | `src/components/PianoRoll.tsx`, `src/lib/note-preview.ts` |
@@ -35,7 +40,7 @@ ABC is the one format everywhere: it is what's stored, what the AI writes, and w
 
 - **Auth.** Sign-in, and the verified JWT that the AI route checks.
 - **Records with realtime sync.** Clips are read with `useQuery` and written with `useMutations`. The pages use the confirmed mutations, so a write the server refuses shows up as an error instead of a false success.
-- **Permissions (RBAC).** Ownership is the record's server-set `createdBy`, with `'own'` rules for update and delete and a `visibilityField` for drafts. The UI hides buttons only for convenience; the RecordRoom makes the decision.
+- **Permissions (RBAC).** Ownership is the record's server-set `createdBy`, with `'own'` rules for update and delete and a `visibilityField` for drafts. The UI hides buttons only for convenience; the RecordRoom makes the decision. `profiles` uses the same `'own'` rules, and `users` is set to `roster: 'read-policy'` so that a user reads only their own account row.
 - **Server-side AI.** `createDeepSpaceAI` with the caller's JWT. The repo holds no API key, and the signed-in user's credits pay for the call. `maxOutputTokens` is capped at 2000.
 - **Agent tools.** The scaffold's record tools (`registerAgent`) stay mounted. `npx deepspace agent invoke midishare records_query` was the way to check on the live app what the server really stores and refuses.
 - **Deploys** to `midishare.app.space`, with GitHub as the source.
@@ -67,8 +72,8 @@ Checks:
 ```bash
 npx tsc --noEmit
 npx eslint src
-npx vitest run             # 88 unit tests: schema permissions, ABC validation, ABC <-> notes, voices, note preview, MIDI import, the audio engines, undo history
-npm run test:e2e           # 24 Playwright tests; the signed-in ones need two DeepSpace test accounts
+npx vitest run             # 97 unit tests: schema permissions, ABC validation, ABC <-> notes, voices, note preview, MIDI import, the audio engines, undo history
+npm run test:e2e           # 26 Playwright tests; the signed-in ones need two DeepSpace test accounts
 ```
 
 The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's direct server calls to read A's draft, or to edit, unpublish or delete A's clips, come back `READ DENIED`, `UPDATE DENIED` and `DELETE DENIED`.
@@ -83,7 +88,7 @@ The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's 
 - **Browse and search run in the browser** over every clip the server lets the caller read. That is fine for a small site and would need server-side filtering and paging for a large one.
 - **The sound is a piano only, and the first sound needs a download.** Play and the note preview are rendered in the browser by Modular, my own audio engine, compiled to WebAssembly and playing a piano soundfont. The first Play or pressed note downloads the engine and the piano (about 7.5 MB). Every MIDI channel plays the piano, with no reverb. The site softens the beat accents that abcjs writes into the MIDI, so the downloaded `.mid` has stronger accents in other SoundFont players than Play has here. If Modular cannot load or rejects a clip, abcjs's built-in synth plays it, with piano samples from a third-party host. The site holds a hand-copied build of Modular; `src/modular/MANIFEST.txt` records which commit.
 - **The AI assistant writes at most 16 bars** and spends the signed-in user's DeepSpace credits.
-- **The Ableton bridge** ([midi-clipboard](https://github.com/huangxuyan1/midi-clipboard), a separate project) is not part of this repo. It copies a MIDI clip in Ableton Live as ABC text and pastes ABC text back into Live, so a clip moves between Live and the site with one copy and one paste. That round trip was checked by hand, not by a test.
+- **The Ableton bridge** ([midi-clipboard](https://github.com/huangxuyan1/midi-clipboard), a separate project) is not part of this repo. It copies a MIDI clip in Ableton Live as ABC text and pastes ABC text back into Live, so a clip moves between Live and the site with one copy and one paste. That round trip was checked by hand, not by a test. Its first release, [MidiClipboard 1.0.0](https://github.com/huangxuyan1/midi-clipboard/releases/tag/v1.0.0), is for Windows and macOS, and plays a chord symbol such as `"Dm"` the way this site does. The site's [/ableton](https://midishare.app.space/ableton) page has the steps.
 
 ## Credits
 
@@ -96,7 +101,6 @@ A coding agent (Claude Code) wrote most of the code under direction. The record 
 - [BUILD_LOG.md](docs/BUILD_LOG.md): each decision, what the agent built, what was verified and how, and the bugs found on the live site.
 - [HANDOFF.md](docs/HANDOFF.md): the brief the agent started from.
 - [SESSION_HANDOFF.md](docs/SESSION_HANDOFF.md): the state and to-do list passed between agent sessions.
-- [SUBMISSION.md](docs/SUBMISSION.md): the submission note.
 - [MODULAR_AUDIO_ENGINE.md](docs/MODULAR_AUDIO_ENGINE.md): the plan for the change of audio engine, written before it was built.
 
 [CLAUDE.md](CLAUDE.md) holds the working rules the agent follows, and [AGENTS.md](AGENTS.md) is the DeepSpace scaffold's own agent guide.

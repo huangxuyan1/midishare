@@ -20,19 +20,19 @@ The app is finished and submittable. What is left is Xuyan's own checking and th
 - **Test accounts:** "Test A" and "Test B" exist. The Playwright fixture signs them in from the CLI's saved credentials.
 - **Skills:** the DeepSpace skill and the 39 Matt Pocock skills are in `.claude/skills/` (gitignored). `skills-lock.json` lists them and is committed.
 
-## 2. To do
+## 2. The list from session 3, and what became of it
 
-1. **Xuyan, by ear.** Press Play in the editor and on a clip page. Confirm that sound comes out and that it lines up with the playhead. Try the space bar. Listen to the five example clips; unpublish or delete any that sound wrong.
-2. **Xuyan, the submission note.** Edit [SUBMISSION.md](SUBMISSION.md) and resolve its two TODO lines (the by-ear check, and any code Xuyan changed by hand). Then submit in the portal: live URL, repository, note.
+1. **Done 2026-11-24: Xuyan, by ear.** Xuyan confirmed that the sound lines up with the playhead, and later listened on the live site through Modular, in Chromium and in Safari. The log does not record a listen to each of the five example clips.
+2. **Done 2026-11-24: the submission note.** The brief asks for a short note, so the long `docs/SUBMISSION.md` was removed from the repo on Xuyan's decision; its last version is in the git history. Xuyan submits in the portal: live URL, repository, and a short note.
 3. **After any code change:** run the checks, commit, deploy, and confirm `dirty: false`. Verify the changed path on the live URL. Add rows to BUILD_LOG.md.
 4. **Done in session 3: the Studio UI.** Xuyan looked at it and approved it ("really, really cool"). Changes to colours, fonts or layout go through `src/themes.css` (the `studio` block), `src/styles.css` (app tokens) and the page files in the table below.
 5. **Done in session 4: ABC from the MIDI Clipboard bridge.** Lengths like `z5` are accepted, and voices with different numbers of lines get a "Line up voices" button in the editor. `lineUpVoices` returns null (no button, only the message) when the music has lyrics, comments, mid-tune fields or inline `[V:]` marks. The agent did not change the bridge.
 6. **Optional polish**, only if Xuyan asks:
    - `/new` starts with an empty title while the example ABC has `T:Example`
    - in keys without flats (C, Am…), B♭ is spelled `^A`
-7. **Set aside, separate tasks:**
+7. **Separate tasks:**
    - **Modular as the audio engine: built on 2026-11-24** (branch `modular-audio-engine`). `src/lib/audio-engine.ts` picks the engine: Modular with a piano soundfont, and the abcjs synth as backup. The Modular build in `src/modular/` is a hand-copied stopgap from Modular commit `00bfcac`; a newer, hardened CI build exists (artifact `modular-web-54612acab62e2a9dde8e5d3775567e61f5d35e04`), and replacing the stopgap with it needs Xuyan's approval of the download. Not built: sending clips with drums or with abcjs MIDI-writer defects to the abcjs synth, loading Modular before the first Play, rendering in a Web Worker. [MODULAR_AUDIO_ENGINE.md](MODULAR_AUDIO_ENGINE.md) is the earlier plan.
-   - **The Ableton bridge now copies and pastes ABC** (`C:\Users\alvin\Documents\Projects\midi-clipboard`). Xuyan did this outside this folder (bridge commit `5d60b4d`, not pushed to GitHub when checked on 2026-11-24) and tested both directions by hand on 2026-11-24: a clip copied in Live pastes into the editor, and a clip's ABC copied from the site pastes into Live.
+   - **The Ableton bridge now copies and pastes ABC** (`C:\Users\alvin\Documents\Projects\midi-clipboard`). Xuyan did this outside this folder (bridge commit `5d60b4d`, on GitHub `master` since 2026-11-24) and tested both directions by hand on 2026-11-24: a clip copied in Live pastes into the editor, and a clip's ABC copied from the site pastes into Live.
 
 ## 3. What the app does
 
