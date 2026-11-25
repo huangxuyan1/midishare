@@ -6,19 +6,41 @@
  * every engine, so it lives here as well (audioContext, playBuffer).
  *
  * The transport (use-playback.ts) and the note preview (note-preview.ts) make
- * sound only through this file. Today there is one engine, the synth built
- * into abcjs (abcjs-engine.ts). To use another engine, write a file like that
- * one and change `engine` below.
+ * sound only through this file. There are two engines: Modular playing a
+ * piano soundfont (modular-engine.ts), and the synth built into abcjs
+ * (abcjs-engine.ts). `engine` below picks which one the site uses.
  */
 import { abcjsEngine } from './abcjs-engine'
+import { modularEngine } from './modular-engine'
+import { loadPiano } from './modular-piano'
 
 export type AudioEngine = {
   /** Renders the clip into a buffer for `context`. Null when the ABC has no music to play. */
   render(abc: string, context: AudioContext): Promise<AudioBuffer | null>
 }
 
-/** The engine the site uses. */
-export const engine: AudioEngine = abcjsEngine
+/**
+ * An engine that renders with `main`, and with `backup` when `main` fails:
+ * when Modular or the piano can't be downloaded, or Modular rejects the clip.
+ */
+export function withFallback(main: AudioEngine, backup: AudioEngine): AudioEngine {
+  return {
+    async render(abc, context) {
+      try {
+        return await main.render(abc, context)
+      } catch (error) {
+        console.warn('The Modular engine could not render this; using the abcjs synth.', error)
+        return backup.render(abc, context)
+      }
+    },
+  }
+}
+
+/**
+ * The engine the site uses: Modular, with the abcjs synth as its backup.
+ * To go back to abcjs alone, write `abcjsEngine` here.
+ */
+export const engine: AudioEngine = withFallback(modularEngine(loadPiano), abcjsEngine)
 
 let context: AudioContext | null = null
 

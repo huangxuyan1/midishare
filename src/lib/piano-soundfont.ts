@@ -3,8 +3,7 @@
  * the "Yamaha Grand Piano" of FluidR3_GM (MIT licence). The file, its licence
  * notice and a note on where it came from are in src/assets/piano.
  *
- * NOT IN USE YET: nothing imports this file until the Modular engine is
- * switched on, so the piano is not in the built site either.
+ * Used by the Modular engine, which audio-engine.ts switches on.
  */
 
 // `?url` makes Vite copy the file into the build under a name that carries a

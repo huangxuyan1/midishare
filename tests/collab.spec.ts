@@ -352,7 +352,7 @@ test('while a long clip plays, the playhead stays in the middle and the roll sli
       }
     })
 
-  // Playing needs the piano samples from the network, so give it time to start.
+  // The first Play downloads Modular and the piano, so give it time to start.
   const transport = a.page.getByTestId('transport')
   await transport.getByRole('button', { name: 'Play' }).click()
   await expect(transport.getByRole('button', { name: 'Stop' })).toBeVisible({ timeout: 30_000 })
@@ -476,8 +476,9 @@ test('a note is resized by dragging either end, and the cursor shows it', async 
 })
 
 /**
- * The note preview loads one piano sample per pitch (C4.mp3, Db4.mp3, ...), so
- * the requests for them show which pitches the page asked to play.
+ * The abcjs synth, the backup audio engine, loads one piano sample per pitch
+ * (C4.mp3, Db4.mp3, ...). The requests for them show that the backup played,
+ * and which pitches. The Modular engine makes no such requests.
  */
 function watchSamples(page: MultiplayerUser['page']): string[] {
   const samples: string[] = []
@@ -488,9 +489,32 @@ function watchSamples(page: MultiplayerUser['page']): string[] {
   return samples
 }
 
+type Sound = { seconds: number; peak: number }
+
+/**
+ * Records every buffer the page starts playing: its length and its loudest
+ * sample. Call it before the page is opened. The returned function reads the
+ * list so far.
+ */
+async function watchSounds(page: MultiplayerUser['page']): Promise<() => Promise<Sound[]>> {
+  await page.addInitScript(() => {
+    const sounds: { seconds: number; peak: number }[] = []
+    ;(window as unknown as { sounds: unknown }).sounds = sounds
+    const start = AudioBufferSourceNode.prototype.start
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      let peak = 0
+      for (const sample of this.buffer!.getChannelData(0)) peak = Math.max(peak, Math.abs(sample))
+      sounds.push({ seconds: this.buffer!.duration, peak })
+      return start.apply(this, args)
+    }
+  })
+  return () => page.evaluate(() => (window as unknown as { sounds: Sound[] }).sounds)
+}
+
 test('a note shows its name under the pointer, and sounds when pressed or dragged to a new pitch', async ({ users }) => {
   const [a] = await users(1)
   const samples = watchSamples(a.page)
+  const sounds = await watchSounds(a.page)
   await a.page.goto('/new')
   const notes = a.page.getByTestId('roll-note')
   await expect(notes.first()).toBeVisible({ timeout: 15_000 })
@@ -507,35 +531,86 @@ test('a note shows its name under the pointer, and sounds when pressed or dragge
   const y = box.y + box.height / 2
   await a.page.mouse.move(x, y)
   await expect(label).toHaveText('C4')
-  expect(samples).toEqual([])
+  expect(await sounds()).toEqual([])
 
-  // Pressing it plays its pitch.
+  // Pressing it plays one short sound that is not silence.
   await a.page.mouse.down()
-  await expect.poll(() => samples).toEqual(['C4'])
+  await expect.poll(async () => (await sounds()).length).toBe(1)
+  const [first] = await sounds()
+  expect(first.seconds).toBeLessThan(2.5)
+  expect(first.peak).toBeGreaterThan(0.05)
 
-  // Dragging it up plays each new pitch, one row (12 pixels) at a time.
+  // Dragging it up plays each new pitch, one row (12 pixels) at a time. Each
+  // sound is waited for, because a preview that is still being rendered when
+  // the next one is asked for is dropped.
   await a.page.mouse.move(x, y - 12)
   await expect(label).toHaveText('C#4')
+  await expect.poll(async () => (await sounds()).length).toBe(2)
   await a.page.mouse.move(x, y - 24)
   await expect(label).toHaveText('D4')
+  await expect.poll(async () => (await sounds()).length).toBe(3)
   await a.page.mouse.move(x, y - 36)
   await expect(label).toHaveText('D#4')
-  await expect.poll(() => samples).toEqual(['C4', 'Db4', 'D4', 'Eb4'])
+  await expect.poll(async () => (await sounds()).length).toBe(4)
 
   // Moving sideways keeps the pitch, so nothing new plays.
   await a.page.mouse.move(x + 28, y - 36)
   await a.page.mouse.up()
   await expect(a.page.getByLabel('ABC notation')).toHaveValue(/\^D/)
-  expect(samples).toEqual(['C4', 'Db4', 'D4', 'Eb4'])
+  expect(await sounds()).toHaveLength(4)
 
   // Away from the note, the name goes.
   await a.page.mouse.move(x + 28, y + 60)
   await expect(label).toHaveCount(0)
+
+  // All of it was the Modular engine: the backup synth downloaded no samples.
+  expect(samples).toEqual([])
+})
+
+test('Play renders the clip with the Modular engine', async ({ users }) => {
+  const [a] = await users(1)
+  const samples = watchSamples(a.page)
+  const sounds = await watchSounds(a.page)
+  await a.page.goto('/new')
+  await expect(a.page.getByTestId('roll-note').first()).toBeVisible({ timeout: 15_000 })
+
+  // One bar of 4/4 at 120 beats a minute: two seconds of music.
+  await a.page.getByLabel('ABC notation').fill('X:1\nT:Modular\nM:4/4\nL:1/4\nQ:1/4=120\nK:C\nC E G c |]')
+  await a.page.getByTestId('transport').getByRole('button', { name: 'Play' }).click()
+
+  await expect.poll(async () => (await sounds()).length).toBe(1)
+  const [sound] = await sounds()
+  // The buffer is the music and then the last note dying away, for at most two more seconds.
+  expect(sound.seconds).toBeGreaterThan(1.99)
+  expect(sound.seconds).toBeLessThan(4.01)
+  // It is sound, and the gain has not pushed it past full scale.
+  expect(sound.peak).toBeGreaterThan(0.05)
+  expect(sound.peak).toBeLessThan(1)
+  expect(samples).toEqual([])
+})
+
+test('when Modular cannot load, the abcjs synth plays the note', async ({ users }) => {
+  const [a] = await users(1)
+  const samples = watchSamples(a.page)
+  await a.page.route('**/*.wasm', (route) => route.abort())
+  await a.page.goto('/new')
+  const notes = a.page.getByTestId('roll-note')
+  await expect(notes.first()).toBeVisible({ timeout: 15_000 })
+
+  await a.page.getByLabel('ABC notation').fill('X:1\nT:Backup\nM:4/4\nL:1/4\nK:C\nC4 |]')
+  await expect(notes).toHaveCount(1)
+  const box = (await notes.first().boundingBox())!
+  await a.page.mouse.move(box.x + 40, box.y + box.height / 2)
+  await a.page.mouse.down()
+  await a.page.mouse.up()
+
+  // The backup synth asks for the sample of the pitch it was told to play.
+  await expect.poll(() => samples).toEqual(['C4'])
 })
 
 test('the clip page shows a read-only piano roll with a transport', async ({ users }) => {
   const [a] = await users(1)
-  const samples = watchSamples(a.page)
+  const sounds = await watchSounds(a.page)
   await a.page.goto('/home')
   await expect(a.page.getByTestId('nav-user-name')).toHaveText(/\S/, { timeout: 15_000 })
 
@@ -567,7 +642,7 @@ test('the clip page shows a read-only piano roll with a transport', async ({ use
     // The notes still show their names and sound when pressed: the first one is middle C.
     await notes.first().hover()
     await expect(a.page.getByTestId('note-label')).toHaveText('C4')
-    await expect.poll(() => samples).toContain('C4')
+    await expect.poll(async () => (await sounds()).length).toBeGreaterThan(0)
 
     // The playhead can still be moved here: a click in the ruler at step 8 (36 + 8 * 14 pixels).
     await a.page.getByTestId('ruler').click({ position: { x: 36 + 8 * 14, y: 9 } })

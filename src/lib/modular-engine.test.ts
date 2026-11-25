@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { abcToMidi, EXAMPLE_ABC } from './abc'
 import type { Instrument } from '../modular/modular.mjs'
-import { modularEngine } from './modular-engine'
+import { GAIN, modularEngine } from './modular-engine'
 import { previewAbc } from './note-preview'
 
 /** Stands in for the browser's AudioContext: remembers what was copied into each buffer. */
@@ -48,7 +48,7 @@ describe('modularEngine', () => {
     expect(String.fromCharCode(...calls[0].midi.slice(0, 4))).toBe('MThd')
   })
 
-  it('copies the left and right samples into a stereo buffer of the same length and rate', async () => {
+  it('copies the left and right samples, made louder, into a stereo buffer of the same length and rate', async () => {
     const { instrument } = fakeInstrument([0.5, -0.5, 0], [0.25, -0.25, 0])
     const { context, buffers } = fakeContext(44100)
 
@@ -57,8 +57,8 @@ describe('modularEngine', () => {
     expect(buffer).not.toBeNull()
     expect(buffers).toHaveLength(1)
     expect(buffers[0]).toMatchObject({ channelCount: 2, length: 3, sampleRate: 44100 })
-    expect([...buffers[0].channels[0]]).toEqual([0.5, -0.5, 0])
-    expect([...buffers[0].channels[1]]).toEqual([0.25, -0.25, 0])
+    expect([...buffers[0].channels[0]]).toEqual([...new Float32Array([0.5 * GAIN, -0.5 * GAIN, 0])])
+    expect([...buffers[0].channels[1]]).toEqual([...new Float32Array([0.25 * GAIN, -0.25 * GAIN, 0])])
   })
 
   it('loads the instrument once and uses it for every render', async () => {

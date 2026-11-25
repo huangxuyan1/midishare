@@ -2,11 +2,14 @@
  * The audio engine that uses Modular, Xuyan's audio graph runtime, compiled
  * to WebAssembly and playing a soundfont.
  *
- * NOT IN USE YET. `engine` in audio-engine.ts still points at abcjs.
- *
  * How it works: the clip goes to Modular as the same MIDI bytes that
  * Download .mid produces. Modular sends back the left and right channels as
- * two arrays of samples, and we copy them into an AudioBuffer.
+ * two arrays of samples. We make them louder (see GAIN) and copy them into an
+ * AudioBuffer.
+ *
+ * The buffer holds the notes and then the last ones dying away, for at most
+ * two seconds. Rests at the end of the clip are not in it; the transport
+ * (use-playback.ts) keeps the clip's own length.
  *
  * The instrument comes from a function passed in (`loadPiano` in
  * modular-piano.ts on the site), so the tests can pass a fake one.
@@ -14,6 +17,14 @@
 import type { Instrument } from '../modular/modular.mjs'
 import { abcToMidi } from './abc'
 import type { AudioEngine } from './audio-engine'
+
+/**
+ * Modular sends the piano's samples as they are, and leaves the level to the
+ * page. Measured on the same clips, they are about 4.4 times quieter than the
+ * abcjs synth, so this brings the two engines to about the same loudness.
+ * PROVISIONAL: Xuyan sets the final value by ear.
+ */
+export const GAIN = 4.4
 
 /**
  * Makes the engine. `loadInstrument` loads the Modular module and the
@@ -35,8 +46,8 @@ export function modularEngine(loadInstrument: () => Promise<Instrument>): AudioE
       if (left.length === 0) return null // nothing to play
 
       const buffer = context.createBuffer(2, left.length, sampleRate)
-      buffer.copyToChannel(left, 0)
-      buffer.copyToChannel(right, 1)
+      buffer.copyToChannel(left.map((sample) => sample * GAIN), 0)
+      buffer.copyToChannel(right.map((sample) => sample * GAIN), 1)
       return buffer
     },
   }

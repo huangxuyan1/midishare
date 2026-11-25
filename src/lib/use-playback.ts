@@ -12,11 +12,15 @@
  *
  * `position` is the playhead in 16th-note steps (the piano roll's grid), updated
  * every animation frame while playing. It is computed from the clock, not read
- * from the audio, using the tune's own milliseconds-per-bar. The end of the
- * music is reached when the clock passes the buffer's length.
+ * from the audio, using the tune's own milliseconds-per-bar.
+ *
+ * The playhead stops at the end of the music, which is the clip's own length
+ * (rests at the end included). The buffer can be a little longer, because it
+ * also holds the last notes dying away. Playback ends when both are over.
  */
 import { useEffect, useRef, useState } from 'react'
 import abcjs from 'abcjs'
+import { abcLengthInSteps } from './abc-notes'
 import { audioContext, engine, playBuffer } from './audio-engine'
 
 export type PlaybackStatus = 'stopped' | 'loading' | 'playing'
@@ -29,6 +33,7 @@ export function usePlayback(abc: string, barSteps: number) {
   const bufferAbc = useRef<string | null>(null) // the ABC the buffer was rendered from
   const stopSound = useRef<(() => void) | null>(null) // stops the buffer while it plays
   const msPerStep = useRef(0)
+  const musicSteps = useRef(0) // the length of the music, in steps
   const frame = useRef(0)
   const resumeAfterSeek = useRef(false) // a drag of the playhead interrupted playback
 
@@ -63,15 +68,18 @@ export function usePlayback(abc: string, barSteps: number) {
       }
       bufferAbc.current = abc
       msPerStep.current = tune.millisecondsPerMeasure() / barSteps
+      musicSteps.current = abcLengthInSteps(abc)
     }
     if (!buffer.current) {
       setStatus('stopped') // the ABC has no notes: nothing to play
       return
     }
 
-    const durationMs = buffer.current.duration * 1000
+    const musicMs = musicSteps.current * msPerStep.current
+    const soundMs = buffer.current.duration * 1000
+    const endMs = Math.max(musicMs, soundMs)
     let from = step * msPerStep.current
-    if (from >= durationMs) from = 0 // the playhead is past the end of the music: start over
+    if (from >= musicMs) from = 0 // the playhead is at or past the end of the music: start over
     stopAudio() // never two at once
     stopSound.current = playBuffer(context, buffer.current, from / 1000)
     setStatus('playing')
@@ -79,14 +87,15 @@ export function usePlayback(abc: string, barSteps: number) {
     const startedAt = performance.now() - from
     const tick = () => {
       const elapsed = performance.now() - startedAt
-      if (elapsed >= durationMs) {
+      if (elapsed >= endMs) {
         // Reached the end: back to the start, like a DAW without loop.
         stopAudio()
         setStatus('stopped')
         setPosition(0)
         return
       }
-      setPosition(elapsed / msPerStep.current)
+      // Past the end of the music the playhead waits there while the last notes die away.
+      setPosition(Math.min(elapsed, musicMs) / msPerStep.current)
       frame.current = requestAnimationFrame(tick)
     }
     tick()

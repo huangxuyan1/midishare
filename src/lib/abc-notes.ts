@@ -47,8 +47,7 @@ export const STEPS_PER_WHOLE = 16
 export function abcToNotes(abc: string): Note[] {
   const [tune] = abcjs.parseOnly(abc)
   if (!tune) return []
-  // setUpAudio isn't in abcjs's type definitions, but it is on every parsed tune.
-  const audio = (tune as unknown as { setUpAudio: (o: object) => AudioSetup }).setUpAudio({})
+  const audio = setUpAudio(tune)
   const notes: Note[] = []
   for (const track of audio.tracks) {
     for (const event of track) {
@@ -63,7 +62,27 @@ export function abcToNotes(abc: string): Note[] {
   return sortNotes(dedupe(notes))
 }
 
-type AudioSetup = { tracks: { cmd: string; pitch: number; start: number; duration: number }[][] }
+/**
+ * How long the music is, in 16th notes, as abcjs counts it. Rests at the end
+ * are part of the music, so this can be later than the end of the last note.
+ */
+export function abcLengthInSteps(abc: string): number {
+  const [tune] = abcjs.parseOnly(abc)
+  if (!tune) return 0
+  return setUpAudio(tune).totalDuration * STEPS_PER_WHOLE
+}
+
+/** Times and lengths are in whole notes. */
+type AudioSetup = {
+  tracks: { cmd: string; pitch: number; start: number; duration: number }[][]
+  totalDuration: number
+}
+
+/** abcjs's own list of what the tune plays. */
+function setUpAudio(tune: abcjs.TuneObject): AudioSetup {
+  // The type definitions give setUpAudio a different shape from what it returns here.
+  return (tune as unknown as { setUpAudio: (options: object) => AudioSetup }).setUpAudio({})
+}
 
 /** Two notes on the same pitch at the same time can't be shown apart; keep the longer one. */
 export function dedupe(notes: Note[]): Note[] {

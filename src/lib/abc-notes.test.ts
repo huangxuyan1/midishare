@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { abcToNotes, keySignature, notesToAbcBody, sortNotes, writeNotesIntoAbc, type Note } from './abc-notes'
+import { abcLengthInSteps, abcToNotes, keySignature, notesToAbcBody, sortNotes, writeNotesIntoAbc, type Note } from './abc-notes'
 import { readHeaders, setHeader } from './abc-headers'
 import { checkAbc, EXAMPLE_ABC } from './abc'
 
@@ -38,6 +38,16 @@ describe('abcToNotes', () => {
       { pitch: 65, start: 0, length: 10 },
       { pitch: 69, start: 26, length: 6 },
     ])
+  })
+})
+
+describe('abcLengthInSteps', () => {
+  it('is the length of the music in 16th notes', () => {
+    expect(abcLengthInSteps(EXAMPLE_ABC)).toBe(64) // four bars of 4/4
+  })
+
+  it('counts rests at the end', () => {
+    expect(abcLengthInSteps(`${HEAD}K:C\nC8 | z8 |]`)).toBe(32) // the note ends at 16
   })
 })
 

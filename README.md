@@ -80,13 +80,13 @@ The two-user test in `tests/collab.spec.ts` is the proof of ownership: user B's 
 - **One track.** The roll has a single lane of notes, C2–B6.
 - **A key change re-spells the notes; it does not transpose.** In keys without flats, B♭ is written as `^A`.
 - **Browse and search run in the browser** over every clip the server lets the caller read. That is fine for a small site and would need server-side filtering and paging for a large one.
-- **The sound is abcjs's built-in synth.** It downloads piano samples from a third-party host when you press Play. Replacing it with my own audio engine is planned: see [docs/MODULAR_AUDIO_ENGINE.md](docs/MODULAR_AUDIO_ENGINE.md).
+- **The sound is a piano only, and the first sound needs a download.** Play and the note preview are rendered in the browser by Modular, my own audio engine, compiled to WebAssembly and playing a piano soundfont. The first Play or pressed note downloads the engine and the piano (about 7.5 MB). Every MIDI channel plays the piano, with no reverb. If Modular cannot load or rejects a clip, abcjs's built-in synth plays it, with piano samples from a third-party host. The site holds a hand-copied build of Modular; `src/modular/MANIFEST.txt` records which commit.
 - **The AI assistant writes at most 16 bars** and spends the signed-in user's DeepSpace credits.
 - **The Ableton bridge** ([midi-clipboard](https://github.com/huangxuyan1/midi-clipboard), a separate project) is not part of this repo. It copies a MIDI clip in Ableton Live as ABC text and pastes ABC text back into Live, so a clip moves between Live and the site with one copy and one paste. That round trip was checked by hand, not by a test.
 
 ## Credits
 
-- **Piano soundfont.** [`src/assets/piano/`](src/assets/piano) holds the "Yamaha Grand Piano" of FluidR3_GM by Frank Wen, under the MIT licence. The licence notice is `COPYING` in that folder, and the `.provenance.txt` file beside it records where the file came from and how it was made. It is for the planned Modular audio engine; nothing plays it yet.
+- **Piano soundfont.** [`src/assets/piano/`](src/assets/piano) holds the "Yamaha Grand Piano" of FluidR3_GM by Frank Wen, under the MIT licence. The licence notice is `COPYING` in that folder, and the `.provenance.txt` file beside it records where the file came from and how it was made. The Modular audio engine plays it.
 
 ## How it was built
 

@@ -3,8 +3,7 @@
  * module built from Xuyan's Modular project (the files in src/modular), and
  * the piano soundfont. Together they make an instrument that renders MIDI.
  *
- * NOT IN USE YET: nothing imports this file until the Modular engine is
- * switched on in audio-engine.ts.
+ * Used by the Modular engine, which audio-engine.ts switches on.
  */
 import { loadModular, type Instrument } from '../modular/modular.mjs'
 import { fetchPiano } from './piano-soundfont'
